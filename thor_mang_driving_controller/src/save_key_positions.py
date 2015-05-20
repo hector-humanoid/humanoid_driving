@@ -63,7 +63,8 @@ class KeyPositionSaver():
 
     def add_key_position(self, angle, joint_positions):
         if joint_positions is not None:
-            self.key_positions[angle] = joint_positions
+            key = str(angle).split('.')[0]
+            self.key_positions[key] = joint_positions
 
     def save_key_positions_to_disc(self, file_name):
         rp = RosPack()
