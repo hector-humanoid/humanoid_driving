@@ -72,7 +72,7 @@ class KeyPositionSaver():
 
         yaml_dict = dict()
         yaml_dict.update({'joints': joints})
-        yaml_dict.update({'angles': list(self.key_positions.iterkeys())})
+        yaml_dict.update({'angles': [int(angle) for angle in self.key_positions.iterkeys()]})
         yaml_dict.update(self.key_positions)
         with open(save_path + file_name, 'w+') as outfile:
             outfile.write(yaml.dump(yaml_dict, default_flow_style=False))
