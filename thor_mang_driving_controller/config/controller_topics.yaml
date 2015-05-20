@@ -1,0 +1,2 @@
+arm_controller_topic: '/l_arm_controller/bla'
+leg_controller_topic: '/r_leg_controller/bla'
