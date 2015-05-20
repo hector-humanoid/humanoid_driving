@@ -12,7 +12,9 @@ DrivingController::DrivingController() :
     steering_inverted_ = true;
     steering_sensitivity_ = 1.0;
     current_steering_angle_ = 0.0;
+    current_absolute_angle_ = 0.0;
     steering_speed_ = 0.0;
+    e_stop_active_ = false;
     private_node_handle_.getParam("steering_controller_topic", steering_controller_topic_);
     private_node_handle_.getParam("speed_controller_topic", speed_controller_topic_);
 
@@ -27,50 +29,61 @@ DrivingController::~DrivingController() {
 }
 
 void DrivingController::updateSteering() {
+    if ( e_stop_active_ ) {
+        ROS_INFO("E-Stop active! Steering blocked!");
+        return;
+    }
+    if (current_absolute_angle_ + steering_speed_ <= -540.0 ||
+        current_absolute_angle_ + steering_speed_ >=  540.0 ) {
+        ROS_INFO("Rotation blocked: No more than 1.5 turns left / right allowed");
+        return; // do not allow more than 3 turns total
+    }
+    current_absolute_angle_ += steering_speed_;
+
     double target_angle = current_steering_angle_ + steering_speed_;
     if ( target_angle < 0.0 )
         target_angle += 360.0;
     else if ( target_angle >= 360.0)
         target_angle -= 360.0;
 
-    //ROS_INFO("target_angle: %f", target_angle);
     std::vector<double> interpolated_frame = getInterpolatedKeyFrame(target_angle, 360.0);
-    //ROS_INFO("interpolated_frame: %f", interpolated_frame[1]);
-
-    trajectory_msgs::JointTrajectory target_trajectory;
-    trajectory_msgs::JointTrajectoryPoint trajectory_point;
-    trajectory_point.positions = interpolated_frame;
-    target_trajectory.points.push_back(trajectory_point);
 
     current_steering_angle_ = target_angle;
-
-    //steering_control_cmd_pub_.publish(target_trajectory);
+    trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(interpolated_frame, steering_joint_names_);
+    steering_control_cmd_pub_.publish(trajectory_msg);
 }
 
 void DrivingController::initKeyFrames() {
+    // load steering key frames
     private_node_handle_.getParam("joints", steering_joint_names_);
 
     std::vector<double> steering_angles;
     private_node_handle_.getParam("angles", steering_angles);
 
-    std::vector<std::string> steering_angles_str;
-    private_node_handle_.getParam("angles", steering_angles_str);
-
     for ( int i = 0; i < steering_angles.size(); i++ ) {
-        //std::stringstream key_position_name;
-        //key_position_name << (int)steering_angles[i];
+        std::stringstream key_position_name;
+        key_position_name << "angle_" << (int)steering_angles[i];
+        std::string name = key_position_name.str();
 
         std::vector<double> steering_key_frame;
-        private_node_handle_.getParam(steering_angles_str[i].c_str(), steering_key_frame);
+        private_node_handle_.getParam(name.c_str(), steering_key_frame);
 
         steering_key_frames_[steering_angles[i]] = steering_key_frame;
     }
+
+    // load speed control key frames
+    private_node_handle_.getParam("leg_joints", leg_joint_names_);
+    private_node_handle_.getParam("angle_forward", drive_forward_frame_);
+    private_node_handle_.getParam("angle_stop", stop_frame_);
+    private_node_handle_.getParam("angle_e_stop", e_stop_frame_);
+
 }
 
 void DrivingController::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
 
     handleSteeringCommand(msg->axes[DrivingController::STEERING]);
-    handleSpeedCommand(msg->axes[DrivingController::SPEED]);
+
+    forwardDrive( msg->buttons[DrivingController::FORWARD] );
 
     if ( msg->buttons[DrivingController::E_STOP] )
         eStop();
@@ -93,7 +106,10 @@ void DrivingController::setSteeringInverted(bool inverted) {
 }
 
 void DrivingController::eStop() {
+    e_stop_active_ = !e_stop_active_;
 
+    trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(e_stop_frame_, leg_joint_names_);
+    speed_control_cmd_pub_.publish(trajectory_msg);
 }
 
 void DrivingController::moveHead(int value) {
@@ -108,19 +124,21 @@ void DrivingController::handleSteeringCommand(double value) {
     steering_speed_ = steering_inverted_ ? -(steering_sensitivity_ * value) : (steering_sensitivity_ * value);
 }
 
-void DrivingController::handleSpeedCommand(double value) {
-    double speed_value = std::max(value, 0.0);
+void DrivingController::forwardDrive(bool drive) {
+    if ( e_stop_active_ ) {
+        ROS_INFO("E-Stop active! Steering blocked!");
+        return;
+    }
 
-    //ROS_INFO("target_value: %f", speed_value);
-    std::vector<double> interpolated_frame = getInterpolatedKeyFrame(speed_value, 1.0);
-    //ROS_INFO("interpolated_frame: %f", interpolated_frame[1]);
+    trajectory_msgs::JointTrajectory trajectory_msg;
+    if ( drive ) {
+        trajectory_msg = generateTrajectoryMsg(drive_forward_frame_, leg_joint_names_);
+    }
+    else {
+        trajectory_msg = generateTrajectoryMsg(stop_frame_, leg_joint_names_);
+    }
 
-    trajectory_msgs::JointTrajectory target_trajectory;
-    trajectory_msgs::JointTrajectoryPoint trajectory_point;
-    trajectory_point.positions = interpolated_frame;
-    target_trajectory.points.push_back(trajectory_point);
-
-    //speed_control_cmd_pub_.publish(target_trajectory);
+    speed_control_cmd_pub_.publish(trajectory_msg);
 }
 
 std::vector<double> DrivingController::getInterpolatedKeyFrame(double value, double max_value) {
@@ -165,6 +183,17 @@ double DrivingController::getPreviousValue(double value) {
     }
 
     return (--steering_key_frames_.end())->first;
+}
+
+trajectory_msgs::JointTrajectory DrivingController::generateTrajectoryMsg(std::vector<double> &joint_angles, std::vector<std::string> joint_names) {
+    trajectory_msgs::JointTrajectory trajectory_msg;
+    trajectory_msgs::JointTrajectoryPoint trajectory_point;
+    trajectory_point.positions = joint_angles;
+    trajectory_point.time_from_start = ros::Duration(1.0);
+    trajectory_msg.points.push_back(trajectory_point);
+    trajectory_msg.joint_names = joint_names;
+
+    return trajectory_msg;
 }
 
 }

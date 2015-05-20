@@ -2,6 +2,7 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/Joy.h>
+#include <trajectory_msgs/JointTrajectory.h>
 
 namespace thor_mang_driving_controller {
   
@@ -9,10 +10,10 @@ class DrivingController {
 public:
   enum AxisIDs {
     STEERING=0,
-    SPEED=3
   };
   
   enum ButtonIDs {
+    FORWARD=1,
     E_STOP=2,
     STEERING_SENSITIVITY_PLUS=7,
     STEERING_SENSITIVITY_MINUS=6,
@@ -31,16 +32,17 @@ public:
 private:
   // load preset points
   void initKeyFrames();
+  trajectory_msgs::JointTrajectory generateTrajectoryMsg(std::vector<double> &joint_angles, std::vector<std::string> joint_names);
 
   std::vector<double> getInterpolatedKeyFrame(double value, double max_value);
   double getPreviousValue(double value);
   double getNextValue(double value);
 
+  void forwardDrive(bool drive);
   void eStop();
   void moveHead(int value);
   void changeSteeringSensitivity(double diff);
   void handleSteeringCommand(double value);
-  void handleSpeedCommand(double value);
 
   // ROS node handle
   ros::NodeHandle node_handle_;
@@ -61,14 +63,17 @@ private:
 
   // joint names used for the target poses
   std::vector<std::string> steering_joint_names_;
-  std::vector<std::string> speed_joint_names_;
+  std::vector<std::string> leg_joint_names_;
 
   // target joint positions
   std::map< double, std::vector<double> > steering_key_frames_;
-  std::map< double, std::vector<double> > speed_key_frames_;
+  std::vector<double> drive_forward_frame_;
+  std::vector<double> stop_frame_;
+  std::vector<double> e_stop_frame_;
 
   // current steering angle
   double current_steering_angle_;
+  double current_absolute_angle_;
 
   // topic for accessing the controllers
   std::string steering_controller_topic_;
@@ -77,6 +82,9 @@ private:
   // sensitivity of the steering commands
   double steering_sensitivity_;
   const double steering_sensitivity_step = 0.5;
+
+  // activate e-stop mode
+  bool e_stop_active_;
 };
 
 
