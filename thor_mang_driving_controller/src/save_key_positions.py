@@ -63,8 +63,7 @@ class KeyPositionSaver():
 
     def add_key_position(self, angle, joint_positions):
         if joint_positions is not None:
-            key = str(angle).split('.')[0]
-            self.key_positions[key] = joint_positions
+            self.key_positions[angle] = joint_positions
 
     def save_key_positions_to_disc(self, file_name):
         rp = RosPack()
@@ -73,7 +72,7 @@ class KeyPositionSaver():
         yaml_dict = dict()
         yaml_dict.update({'joints': joints})
         yaml_dict.update({'angles': [int(angle) for angle in self.key_positions.iterkeys()]})
-        yaml_dict.update(self.key_positions)
+        yaml_dict.update({'angle_' + str(angle).split('.')[0]: self.key_positions[angle] for angle in self.key_positions})
         with open(save_path + file_name, 'w+') as outfile:
             outfile.write(yaml.dump(yaml_dict, default_flow_style=False))
 
