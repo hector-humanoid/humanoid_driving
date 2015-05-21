@@ -14,7 +14,8 @@ DrivingController::DrivingController() :
     current_steering_angle_ = 0.0;
     current_absolute_angle_ = 0.0;
     steering_speed_ = 0.0;
-    e_stop_active_ = false;
+    all_stop_active_ = false;
+
     private_node_handle_.getParam("steering_controller_topic", steering_controller_topic_);
     private_node_handle_.getParam("speed_controller_topic", speed_controller_topic_);
     private_node_handle_.getParam("joint_state_topic", joint_state_topic_);
@@ -31,8 +32,8 @@ DrivingController::~DrivingController() {
 }
 
 void DrivingController::updateSteering() {
-    if ( e_stop_active_ ) {
-        ROS_INFO("E-Stop active! Steering blocked!");
+    if ( all_stop_active_ ) {
+        ROS_INFO("All-Stop active! Steering blocked!");
         return;
     }
     if (current_absolute_angle_ + steering_speed_ <= -540.0 ||
@@ -75,9 +76,11 @@ void DrivingController::initKeyFrames() {
 
     // load speed control key frames
     private_node_handle_.getParam("leg_joints", leg_joint_names_);
-    private_node_handle_.getParam("angle_forward", drive_forward_frame_);
-    private_node_handle_.getParam("angle_stop", stop_frame_);
-    private_node_handle_.getParam("angle_e_stop", e_stop_frame_);
+    private_node_handle_.getParam("speed_control_joint", speed_control_joint_name_);
+    private_node_handle_.getParam("angle_forward", drive_forward_angle_);
+    private_node_handle_.getParam("angle_stop", stop_angle_);
+
+    //private_node_handle_.getParam("angle_e_stop", e_stop_frame_);
 
 }
 
@@ -87,8 +90,8 @@ void DrivingController::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
 
     forwardDrive( msg->buttons[DrivingController::FORWARD] );
 
-    if ( msg->buttons[DrivingController::E_STOP] )
-        eStop();
+    if ( msg->buttons[DrivingController::ALL_STOP] )
+        allStop();
 
     if ( msg->buttons[DrivingController::STEERING_SENSITIVITY_PLUS] )
         changeSteeringSensitivity(steering_sensitivity_step);
@@ -104,28 +107,24 @@ void DrivingController::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
 }
 
 void DrivingController::handleNewJointStateEvent(sensor_msgs::JointStateConstPtr msg) {
-    current_joint_names_ = msg->name;
-    current_joint_positions_ = msg->position;
+    robot_joint_names_ = msg->name;
+    robot_joint_positions_ = msg->position;
 }
 
 void DrivingController::setSteeringInverted(bool inverted) {
     steering_inverted_ = inverted;
 }
 
-void DrivingController::eStop() {
-    e_stop_active_ = !e_stop_active_;
+void DrivingController::allStop() {
+    all_stop_active_ = !all_stop_active_;
 
     // stop driving
-    trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(e_stop_frame_, leg_joint_names_);
+    std::vector<double> all_stop_leg_position = getRobotJointPositions(leg_joint_names_, speed_control_joint_name_, all_stop_angle_);
+    trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(all_stop_leg_position, leg_joint_names_);
     speed_control_cmd_pub_.publish(trajectory_msg);
 
     // stop steering
-    std::vector<double> current_steering_position;
-    for ( int i = 0; i < steering_joint_names_.size(); i++ ) {
-        std::vector<std::string>::iterator it = std::find(current_joint_names_.begin(), current_joint_names_.end(), steering_joint_names_[i]);
-        int idx = distance(current_joint_names_.begin(), it);
-        current_steering_position.push_back(current_joint_positions_[idx]);
-    }
+    std::vector<double> current_steering_position = getRobotJointPositions(steering_joint_names_);
     trajectory_msg = generateTrajectoryMsg(current_steering_position, steering_joint_names_);
     steering_control_cmd_pub_.publish(trajectory_msg);
 }
@@ -143,17 +142,19 @@ void DrivingController::handleSteeringCommand(double value) {
 }
 
 void DrivingController::forwardDrive(bool drive) {
-    if ( e_stop_active_ ) {
+    if ( all_stop_active_ ) {
         ROS_INFO("E-Stop active! Steering blocked!");
         return;
     }
 
     trajectory_msgs::JointTrajectory trajectory_msg;
     if ( drive ) {
-        trajectory_msg = generateTrajectoryMsg(drive_forward_frame_, leg_joint_names_);
+        std::vector<double> forward_positions = getRobotJointPositions(leg_joint_names_, speed_control_joint_name_, drive_forward_angle_);
+        trajectory_msg = generateTrajectoryMsg(forward_positions, leg_joint_names_);
     }
     else {
-        trajectory_msg = generateTrajectoryMsg(stop_frame_, leg_joint_names_);
+        std::vector<double> stop_positions = getRobotJointPositions(leg_joint_names_, speed_control_joint_name_, stop_angle_);
+        trajectory_msg = generateTrajectoryMsg(stop_positions, leg_joint_names_);
     }
 
     speed_control_cmd_pub_.publish(trajectory_msg);
@@ -201,6 +202,22 @@ double DrivingController::getPreviousValue(double value) {
     }
 
     return (--steering_key_frames_.end())->first;
+}
+
+std::vector<double> DrivingController::getRobotJointPositions(std::vector<std::string> &joint_names, std::string replace_joint_name, double replace_joint_angle) {
+    std::vector<double> joint_positions;
+    for ( int i = 0; i < joint_names.size(); i++ ) {
+        if ( joint_names[i] == replace_joint_name ) {
+            joint_positions.push_back(replace_joint_angle);
+        }
+        else {
+            std::vector<std::string>::iterator it = std::find(robot_joint_names_.begin(), robot_joint_names_.end(), joint_names[i]);
+            int idx = distance(robot_joint_names_.begin(), it);
+            joint_positions.push_back(robot_joint_positions_[idx]);
+        }
+    }
+
+    return joint_positions;
 }
 
 trajectory_msgs::JointTrajectory DrivingController::generateTrajectoryMsg(std::vector<double> &joint_angles, std::vector<std::string> joint_names) {

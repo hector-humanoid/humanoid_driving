@@ -15,7 +15,7 @@ public:
   
   enum ButtonIDs {
     FORWARD=1,
-    E_STOP=2,
+    ALL_STOP=2,
     STEERING_SENSITIVITY_PLUS=7,
     STEERING_SENSITIVITY_MINUS=6,
     HEAD_LEFT=4,
@@ -34,6 +34,7 @@ public:
 private:
   // load preset points
   void initKeyFrames();
+  std::vector<double> getRobotJointPositions(std::vector<std::string> &joint_names, std::string replace_joint_name = "", double replace_joint_angle = 0.0);
   trajectory_msgs::JointTrajectory generateTrajectoryMsg(std::vector<double> &joint_angles, std::vector<std::string> joint_names);
 
   std::vector<double> getInterpolatedKeyFrame(double value, double max_value);
@@ -41,7 +42,7 @@ private:
   double getNextValue(double value);
 
   void forwardDrive(bool drive);
-  void eStop();
+  void allStop();
   void moveHead(int value);
   void changeSteeringSensitivity(double diff);
   void handleSteeringCommand(double value);
@@ -57,6 +58,11 @@ private:
   // Publisher for controller commands
   ros::Publisher steering_control_cmd_pub_;
   ros::Publisher speed_control_cmd_pub_;
+
+  // topic for accessing the controllers
+  std::string steering_controller_topic_;
+  std::string speed_controller_topic_;
+  std::string joint_state_topic_;
   
   // invert steering input (to achieve -1 = left, +1 = right)
   bool steering_inverted_;
@@ -67,32 +73,29 @@ private:
   // joint names used for the target poses
   std::vector<std::string> steering_joint_names_;
   std::vector<std::string> leg_joint_names_;
+  std::string speed_control_joint_name_;
 
   // target joint positions
   std::map< double, std::vector<double> > steering_key_frames_;
-  std::vector<double> drive_forward_frame_;
-  std::vector<double> stop_frame_;
-  std::vector<double> e_stop_frame_;
+  double drive_forward_angle_;
+  double stop_angle_;
+  double all_stop_angle_;
+  //std::vector<double> e_stop_frame_;
 
   // current steering angle
   double current_steering_angle_;
   double current_absolute_angle_;
-
-  // topic for accessing the controllers
-  std::string steering_controller_topic_;
-  std::string speed_controller_topic_;
-  std::string joint_state_topic_;
 
   // sensitivity of the steering commands
   double steering_sensitivity_;
   const double steering_sensitivity_step = 0.5;
 
   // activate e-stop mode
-  bool e_stop_active_;
+  bool all_stop_active_;
 
-  // current joint states
-  std::vector<std::string> current_joint_names_;
-  std::vector<double> current_joint_positions_;
+  // current joint states of the robot
+  std::vector<std::string> robot_joint_names_;
+  std::vector<double> robot_joint_positions_;
 };
 
 
