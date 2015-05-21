@@ -1,2 +1,3 @@
 steering_controller_topic: '/thor_mang/left_arm_traj_controller/command'
 speed_controller_topic: '/thor_mang/right_leg_traj_controller/command'
+joint_state_topic: '/thor_mang/joint_states'

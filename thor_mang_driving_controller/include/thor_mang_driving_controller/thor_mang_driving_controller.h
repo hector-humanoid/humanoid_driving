@@ -2,6 +2,7 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/Joy.h>
+#include <sensor_msgs/JointState.h>
 #include <trajectory_msgs/JointTrajectory.h>
 
 namespace thor_mang_driving_controller {
@@ -25,6 +26,7 @@ public:
   ~DrivingController();
   
   void handleJoyPadEvent(sensor_msgs::JoyConstPtr msg);
+  void handleNewJointStateEvent(sensor_msgs::JointStateConstPtr msg);
 
   void setSteeringInverted(bool inverted);
   void updateSteering();
@@ -50,6 +52,7 @@ private:
 
   // Subscriber for joypad commands
   ros::Subscriber joypad_sub_;
+  ros::Subscriber joint_state_sub_;
 
   // Publisher for controller commands
   ros::Publisher steering_control_cmd_pub_;
@@ -78,6 +81,7 @@ private:
   // topic for accessing the controllers
   std::string steering_controller_topic_;
   std::string speed_controller_topic_;
+  std::string joint_state_topic_;
 
   // sensitivity of the steering commands
   double steering_sensitivity_;
@@ -85,6 +89,10 @@ private:
 
   // activate e-stop mode
   bool e_stop_active_;
+
+  // current joint states
+  std::vector<std::string> current_joint_names_;
+  std::vector<double> current_joint_positions_;
 };
 
 

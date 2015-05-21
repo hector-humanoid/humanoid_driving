@@ -17,11 +17,13 @@ DrivingController::DrivingController() :
     e_stop_active_ = false;
     private_node_handle_.getParam("steering_controller_topic", steering_controller_topic_);
     private_node_handle_.getParam("speed_controller_topic", speed_controller_topic_);
+    private_node_handle_.getParam("joint_state_topic", joint_state_topic_);
 
     steering_control_cmd_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(steering_controller_topic_, 1, false);
     speed_control_cmd_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(speed_controller_topic_, 1, false);
 
     joypad_sub_ = node_handle_.subscribe("joy", 1, &DrivingController::handleJoyPadEvent, this);
+    joint_state_sub_ = node_handle_.subscribe(joint_state_topic_, 1, &DrivingController::handleNewJointStateEvent, this);
 }
 
 DrivingController::~DrivingController() {
@@ -101,6 +103,11 @@ void DrivingController::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
         moveHead(+1);
 }
 
+void DrivingController::handleNewJointStateEvent(sensor_msgs::JointStateConstPtr msg) {
+    current_joint_names_ = msg->name;
+    current_joint_positions_ = msg->position;
+}
+
 void DrivingController::setSteeringInverted(bool inverted) {
     steering_inverted_ = inverted;
 }
@@ -108,8 +115,19 @@ void DrivingController::setSteeringInverted(bool inverted) {
 void DrivingController::eStop() {
     e_stop_active_ = !e_stop_active_;
 
+    // stop driving
     trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(e_stop_frame_, leg_joint_names_);
     speed_control_cmd_pub_.publish(trajectory_msg);
+
+    // stop steering
+    std::vector<double> current_steering_position;
+    for ( int i = 0; i < steering_joint_names_.size(); i++ ) {
+        std::vector<std::string>::iterator it = std::find(current_joint_names_.begin(), current_joint_names_.end(), steering_joint_names_[i]);
+        int idx = distance(current_joint_names_.begin(), it);
+        current_steering_position.push_back(current_joint_positions_[idx]);
+    }
+    trajectory_msg = generateTrajectoryMsg(current_steering_position, steering_joint_names_);
+    steering_control_cmd_pub_.publish(trajectory_msg);
 }
 
 void DrivingController::moveHead(int value) {
