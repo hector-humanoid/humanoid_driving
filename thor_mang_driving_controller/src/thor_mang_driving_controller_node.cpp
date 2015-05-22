@@ -40,6 +40,7 @@ int main(int argc, char** argv)
   while (ros::ok()) {
       ros::spinOnce();
       driving_controller.updateSteering();
+      driving_controller.updateHeadPosition();
       rate.sleep();
   }
 }

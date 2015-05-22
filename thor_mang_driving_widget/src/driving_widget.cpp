@@ -30,8 +30,6 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     connect(ui_->spinBox_SpeedControlFactor, SIGNAL(valueChanged(double)), this, SLOT(SLO_SpeedFactorChanged(double)));
     connect(ui_->spinBox_TimeFromStart, SIGNAL(valueChanged(double)), this, SLOT(SLO_TimeFromStartChanged(double)));
     connect(ui_->pushButton_ShowCameraImage, SIGNAL(toggled(bool)), this, SLOT(SLO_ShowCameraImage(bool)));
-
-    ui_->label_AllStopActive->hide();
 }
 
 DrivingWidget::~DrivingWidget()

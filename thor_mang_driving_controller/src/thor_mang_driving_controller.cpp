@@ -18,12 +18,20 @@ DrivingController::DrivingController() :
     time_from_start_ = 1.0;
     received_robot_positions_ = false;
 
+    tilt_speed_ = 0.0;
+    tilt_sensitivity_ = 1.0;
+    pan_speed_ = 0.0;
+    pan_sensitivity_ = 1.0;
+
     private_node_handle_.getParam("steering_controller_topic", steering_controller_topic_);
     private_node_handle_.getParam("speed_controller_topic", speed_controller_topic_);
+    private_node_handle_.getParam("head_controller_topic", head_controller_topic_);
     private_node_handle_.getParam("joint_state_topic", joint_state_topic_);
 
     steering_control_cmd_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(steering_controller_topic_, 1, false);
     speed_control_cmd_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(speed_controller_topic_, 1, false);
+    head_control_cmd_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(head_controller_topic_, 1, false);
+
     steering_position_pub_ = node_handle_.advertise<std_msgs::Float64>("driving_controller/target_steering_position", 1, true);
     speed_control_factor_pub_ = node_handle_.advertise<std_msgs::Float64>("driving_controller/speed_factor", 1, true);
     all_stop_enabled_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/all_stop_enabled", 1, true);
@@ -73,6 +81,28 @@ void DrivingController::updateSteering() {
     steering_control_cmd_pub_.publish(trajectory_msg);
 }
 
+void DrivingController::updateHeadPosition() {
+    if ( !received_robot_positions_ ) {
+        ROS_ERROR("No robot positions received => No Update");
+        return;
+    }
+    if ( all_stop_active_ ) {
+        //ROS_INFO("All-Stop active! Steering blocked!");
+        return;
+    }
+
+
+
+    // publish current absolute angle for visualization
+    std::vector<std::string> head_joint_names = {"head_pan", "head_tilt"};
+    std::vector<double> target_head_positions = getRobotJointPositions(head_joint_names);
+    target_head_positions[0] += pan_speed_;
+    target_head_positions[1] += tilt_speed_;
+
+    trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(target_head_positions, head_joint_names);
+    head_control_cmd_pub_.publish(trajectory_msg);
+}
+
 void DrivingController::initKeyFrames() {
     // load steering key frames
     private_node_handle_.getParam("joints", steering_joint_names_);
@@ -105,6 +135,7 @@ void DrivingController::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
     }
 
     handleSteeringCommand(msg->axes[DrivingController::STEERING]);
+    handleHeadCommand(msg->axes[DrivingController::HEAD_TILT], msg->axes[DrivingController::HEAD_PAN]);
 
     forwardDrive( msg->buttons[DrivingController::FORWARD] );
 
@@ -117,11 +148,6 @@ void DrivingController::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
     if ( msg->buttons[DrivingController::STEERING_SENSITIVITY_MINUS] )
         changeSteeringSensitivity(-steering_sensitivity_step);
 
-    if ( msg->buttons[DrivingController::HEAD_LEFT] )
-        moveHead(-1);
-
-    if ( msg->buttons[DrivingController::HEAD_RIGHT] )
-        moveHead(+1);
 }
 
 void DrivingController::handleNewJointStateEvent(sensor_msgs::JointStateConstPtr msg) {
@@ -169,10 +195,6 @@ void DrivingController::allStop() {
     all_stop_enabled_pub_.publish(all_stop_active_msg);
 }
 
-void DrivingController::moveHead(int value) {
-
-}
-
 void DrivingController::changeSteeringSensitivity(double diff) {
     steering_sensitivity_ += diff;
 
@@ -183,6 +205,11 @@ void DrivingController::changeSteeringSensitivity(double diff) {
 
 void DrivingController::handleSteeringCommand(double value) {
     steering_speed_ = steering_inverted_ ? -(steering_sensitivity_ * value) : (steering_sensitivity_ * value);
+}
+
+void DrivingController::handleHeadCommand(double tilt, double pan) {
+    tilt_speed_ = tilt_sensitivity_ * tilt;
+    pan_speed_ = pan_sensitivity_ * pan;
 }
 
 void DrivingController::forwardDrive(bool drive) {

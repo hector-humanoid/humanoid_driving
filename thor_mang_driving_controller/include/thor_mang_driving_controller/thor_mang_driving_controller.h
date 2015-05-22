@@ -13,6 +13,8 @@ class DrivingController {
 public:
   enum AxisIDs {
     STEERING=0,
+    HEAD_PAN=2,
+    HEAD_TILT=3
   };
   
   enum ButtonIDs {
@@ -20,8 +22,6 @@ public:
     ALL_STOP=2,
     STEERING_SENSITIVITY_PLUS=7,
     STEERING_SENSITIVITY_MINUS=6,
-    HEAD_LEFT=4,
-    HEAD_RIGHT=5
   };
   
   DrivingController();
@@ -34,6 +34,7 @@ public:
 
   void setSteeringInverted(bool inverted);
   void updateSteering();
+  void updateHeadPosition();
   
 private:
   // load preset points
@@ -47,9 +48,9 @@ private:
 
   void forwardDrive(bool drive);
   void allStop();
-  void moveHead(int value);
   void changeSteeringSensitivity(double diff);
   void handleSteeringCommand(double value);
+  void handleHeadCommand(double tilt, double pan);
 
   // ROS node handle
   ros::NodeHandle node_handle_;
@@ -65,6 +66,7 @@ private:
   // Publisher for controller commands
   ros::Publisher steering_control_cmd_pub_;
   ros::Publisher speed_control_cmd_pub_;
+  ros::Publisher head_control_cmd_pub_;
 
   ros::Publisher steering_position_pub_;
   ros::Publisher speed_control_factor_pub_;
@@ -74,6 +76,7 @@ private:
   std::string steering_controller_topic_;
   std::string speed_controller_topic_;
   std::string joint_state_topic_;
+  std::string head_controller_topic_;
   
   // invert steering input (to achieve -1 = left, +1 = right)
   bool steering_inverted_;
@@ -111,6 +114,13 @@ private:
 
   // already received one set of robot positions
   bool received_robot_positions_;
+
+  // head control stuff
+  double tilt_speed_;
+  double tilt_sensitivity_;
+  double pan_speed_;
+  double pan_sensitivity_;
+
 };
 
 
