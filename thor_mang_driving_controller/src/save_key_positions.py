@@ -15,17 +15,6 @@ joints = ['l_shoulder_pitch', 'l_shoulder_roll', 'l_shoulder_yaw', 'l_elbow', 'l
           'l_wrist_yaw2']
 
 
-class KeyPosition():
-    def __init__(self, angle, joint_positions):
-        self.angle = angle
-        if len(joint_positions) == len(joints):
-            self.joint_positions = joint_positions
-        else:
-            rospy.logerr('Tried to save KeyPos with mismatching joint number.'
-                         ' Got ' + len(joint_positions) + ', expected ' + len(joints))
-            self.joint_positions = [0] * len(joints)
-
-
 class KeyPositionSaver():
     def __init__(self):
         rospy.init_node("key_position_saver")
