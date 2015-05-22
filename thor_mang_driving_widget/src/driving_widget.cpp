@@ -23,12 +23,15 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
 
     target_steering_position_sub_ = node_handle_.subscribe("driving_controller/target_steering_position", 1, &DrivingWidget::handleTargetSteeringPositionChanged, this);
     speed_factor_sub_ = node_handle_.subscribe("driving_controller/speed_factor", 1, &DrivingWidget::handleNewSpeedFactor, this);
+    all_stop_enabled_sub_ = node_handle_.subscribe("driving_controller/all_stop_enabled", 1, &DrivingWidget::handleAllStopEnabled, this);
 
     timer_.start(33, this);
 
     connect(ui_->spinBox_SpeedControlFactor, SIGNAL(valueChanged(double)), this, SLOT(SLO_SpeedFactorChanged(double)));
     connect(ui_->spinBox_TimeFromStart, SIGNAL(valueChanged(double)), this, SLOT(SLO_TimeFromStartChanged(double)));
     connect(ui_->pushButton_ShowCameraImage, SIGNAL(toggled(bool)), this, SLOT(SLO_ShowCameraImage(bool)));
+
+    ui_->label_AllStopActive->hide();
 }
 
 DrivingWidget::~DrivingWidget()
@@ -48,26 +51,25 @@ void DrivingWidget::timerEvent(QTimerEvent *event)
         ros::spinOnce();
 }
 
-void DrivingWidget::handleTargetSteeringPositionChanged(std_msgs::Float64::ConstPtr msg ) {
+void DrivingWidget::handleTargetSteeringPositionChanged(std_msgs::Float64ConstPtr msg ) {
     double target_steering_position = msg->data;
     double wheel_position = target_steering_position*45/540;
 
-    ui_->lineEdit_WheelAngle->setText( QString("%1 deg").arg(wheel_position));
-    ui_->lineEdit_SteeringAngle->setText(QString("%1 deg").arg(target_steering_position));
+    ui_->lineEdit_WheelAngle->setText( QString("%1 \260").arg(wheel_position, 3, 'f', 1));
+    ui_->lineEdit_SteeringAngle->setText(QString("%1 \260").arg(target_steering_position, 3, 'f', 1));
 
 
-    // set dial correctly
-    // map to [-180; +180]
+    // set dial => map to [-180; +180]
     if ( target_steering_position >= 360.0 )  target_steering_position -= 360.0;
     if ( target_steering_position <= -360.0 ) target_steering_position += 360.0;
 
     if ( target_steering_position <= -180.0 ) target_steering_position += 360.0;
     if ( target_steering_position >= 180.0 )  target_steering_position -= 360.0;
 
-    ui_->dial_TargetSteeringPosition->setValue( (int)target_steering_position);//
+    ui_->dial_TargetSteeringPosition->setValue( (int)target_steering_position);
 }
 
-void DrivingWidget::handleNewSpeedFactor(std_msgs::Float64::ConstPtr msg) {
+void DrivingWidget::handleNewSpeedFactor(std_msgs::Float64ConstPtr msg) {
     ui_->spinBox_SpeedControlFactor->blockSignals(true);
     ui_->spinBox_SpeedControlFactor->setValue(msg->data);
     ui_->spinBox_SpeedControlFactor->blockSignals(false);
@@ -76,6 +78,10 @@ void DrivingWidget::handleNewSpeedFactor(std_msgs::Float64::ConstPtr msg) {
 void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
     QImage img(&(msg->data[0]), msg->width, msg->height, QImage::Format_RGB888);
     ui_->label_CameraImage->setPixmap(QPixmap::fromImage(img));
+}
+
+void DrivingWidget::handleAllStopEnabled(std_msgs::BoolConstPtr msg) {
+    ui_->label_AllStopActive->setVisible(msg->data);
 }
 
 void DrivingWidget::SLO_SpeedFactorChanged(double factor) {

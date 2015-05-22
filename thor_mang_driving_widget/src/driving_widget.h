@@ -2,6 +2,7 @@
 
 #include <ros/ros.h>
 #include <std_msgs/Float64.h>
+#include <std_msgs/Bool.h>
 #include <sensor_msgs/Image.h>
 
 #include <QMainWindow>
@@ -20,9 +21,10 @@ public:
     explicit DrivingWidget(QWidget *parent = 0);
     ~DrivingWidget();
 
-    void handleTargetSteeringPositionChanged(std_msgs::Float64::ConstPtr msg );
-    void handleNewSpeedFactor(std_msgs::Float64::ConstPtr msg);
+    void handleTargetSteeringPositionChanged(std_msgs::Float64ConstPtr msg );
+    void handleNewSpeedFactor(std_msgs::Float64ConstPtr msg);
     void handleNewCameraImage(sensor_msgs::ImageConstPtr msg);
+    void handleAllStopEnabled(std_msgs::BoolConstPtr msg);
 
 protected:
     void timerEvent(QTimerEvent *event);
@@ -45,6 +47,7 @@ private:
     ros::Subscriber target_steering_position_sub_;
     ros::Subscriber speed_factor_sub_;
     ros::Subscriber camera_image_sub_;
+    ros::Subscriber all_stop_enabled_sub_;
 
     std::string camera_topic_;
 };

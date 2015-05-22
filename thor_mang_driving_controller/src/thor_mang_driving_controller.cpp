@@ -24,8 +24,9 @@ DrivingController::DrivingController() :
 
     steering_control_cmd_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(steering_controller_topic_, 1, false);
     speed_control_cmd_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(speed_controller_topic_, 1, false);
-    steering_position_pub_ = node_handle_.advertise<std_msgs::Float64>("driving_controller/target_steering_position", 1, false);
-    speed_control_factor_pub_ = node_handle_.advertise<std_msgs::Float64>("driving_controller/speed_factor", 1, false);
+    steering_position_pub_ = node_handle_.advertise<std_msgs::Float64>("driving_controller/target_steering_position", 1, true);
+    speed_control_factor_pub_ = node_handle_.advertise<std_msgs::Float64>("driving_controller/speed_factor", 1, true);
+    all_stop_enabled_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/all_stop_enabled", 1, true);
 
     joypad_sub_ = node_handle_.subscribe("joy", 1, &DrivingController::handleJoyPadEvent, this);
     joint_state_sub_ = node_handle_.subscribe(joint_state_topic_, 1, &DrivingController::handleNewJointStateEvent, this);
@@ -44,7 +45,7 @@ void DrivingController::updateSteering() {
         return;
     }
     if ( all_stop_active_ ) {
-        ROS_INFO("All-Stop active! Steering blocked!");
+        //ROS_INFO("All-Stop active! Steering blocked!");
         return;
     }
     if (current_absolute_angle_ + steering_speed_ <= -540.0 ||
@@ -154,6 +155,18 @@ void DrivingController::allStop() {
     std::vector<double> current_steering_position = getRobotJointPositions(steering_joint_names_);
     trajectory_msg = generateTrajectoryMsg(current_steering_position, steering_joint_names_);
     steering_control_cmd_pub_.publish(trajectory_msg);
+
+    // send info to UI
+    if ( all_stop_active_ ) {
+        ROS_INFO("All-Stop active! Steering blocked!");
+    }
+    else {
+        ROS_INFO("All-Stop released");
+    }
+
+    std_msgs::Bool all_stop_active_msg;
+    all_stop_active_msg.data = all_stop_active_;
+    all_stop_enabled_pub_.publish(all_stop_active_msg);
 }
 
 void DrivingController::moveHead(int value) {

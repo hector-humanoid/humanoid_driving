@@ -2,6 +2,7 @@
 
 #include <ros/ros.h>
 #include <std_msgs/Float64.h>
+#include <std_msgs/Bool.h>
 #include <sensor_msgs/Joy.h>
 #include <sensor_msgs/JointState.h>
 #include <trajectory_msgs/JointTrajectory.h>
@@ -67,6 +68,7 @@ private:
 
   ros::Publisher steering_position_pub_;
   ros::Publisher speed_control_factor_pub_;
+  ros::Publisher all_stop_enabled_pub_;
 
   // topic for accessing the controllers
   std::string steering_controller_topic_;
