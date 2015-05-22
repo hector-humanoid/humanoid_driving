@@ -14,7 +14,7 @@ DrivingController::DrivingController() :
     current_steering_angle_ = 0.0;
     current_absolute_angle_ = 0.0;
     steering_speed_ = 0.0;
-    all_stop_active_ = false;
+    all_stop_active_ = true;
     time_from_start_ = 1.0;
     received_robot_positions_ = false;
 
