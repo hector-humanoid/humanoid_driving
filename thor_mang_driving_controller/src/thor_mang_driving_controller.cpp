@@ -15,6 +15,8 @@ DrivingController::DrivingController() :
     current_absolute_angle_ = 0.0;
     steering_speed_ = 0.0;
     all_stop_active_ = false;
+    time_from_start_ = 1.0;
+    received_robot_positions_ = false;
 
     private_node_handle_.getParam("steering_controller_topic", steering_controller_topic_);
     private_node_handle_.getParam("speed_controller_topic", speed_controller_topic_);
@@ -22,9 +24,15 @@ DrivingController::DrivingController() :
 
     steering_control_cmd_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(steering_controller_topic_, 1, false);
     speed_control_cmd_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(speed_controller_topic_, 1, false);
+    steering_position_pub_ = node_handle_.advertise<std_msgs::Float64>("driving_controller/target_steering_position", 1, true);
+    speed_control_factor_pub_ = node_handle_.advertise<std_msgs::Float64>("driving_controller/speed_factor", 1, true);
+    all_stop_enabled_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/all_stop_enabled", 1, true);
 
     joypad_sub_ = node_handle_.subscribe("joy", 1, &DrivingController::handleJoyPadEvent, this);
     joint_state_sub_ = node_handle_.subscribe(joint_state_topic_, 1, &DrivingController::handleNewJointStateEvent, this);
+
+    time_from_start_sub_ = node_handle_.subscribe("driving_widget/time_from_start", 1, &DrivingController::handleNewTimeFromStart, this);;
+    speed_control_factor_sub_ = node_handle_.subscribe("driving_widget/speed_factor", 1, &DrivingController::handleNewSpeedFactor, this);;
 }
 
 DrivingController::~DrivingController() {
@@ -32,8 +40,12 @@ DrivingController::~DrivingController() {
 }
 
 void DrivingController::updateSteering() {
+    if ( !received_robot_positions_ ) {
+        ROS_ERROR("No robot positions received => No Update");
+        return;
+    }
     if ( all_stop_active_ ) {
-        ROS_INFO("All-Stop active! Steering blocked!");
+        //ROS_INFO("All-Stop active! Steering blocked!");
         return;
     }
     if (current_absolute_angle_ + steering_speed_ <= -540.0 ||
@@ -42,6 +54,11 @@ void DrivingController::updateSteering() {
         return; // do not allow more than 3 turns total
     }
     current_absolute_angle_ += steering_speed_;
+
+    // publish current absolute angle for visualization
+    std_msgs::Float64 steering_position_msg;
+    steering_position_msg.data = current_absolute_angle_;
+    steering_position_pub_.publish(steering_position_msg);
 
     double target_angle = current_steering_angle_ + steering_speed_;
     if ( target_angle < 0.0 )
@@ -76,15 +93,16 @@ void DrivingController::initKeyFrames() {
 
     // load speed control key frames
     private_node_handle_.getParam("leg_joints", leg_joint_names_);
-    private_node_handle_.getParam("speed_control_joint", speed_control_joint_name_);
-    private_node_handle_.getParam("angle_forward", drive_forward_angle_);
-    private_node_handle_.getParam("angle_stop", stop_angle_);
-
-    //private_node_handle_.getParam("angle_e_stop", e_stop_frame_);
-
+    private_node_handle_.getParam("speed_control_joints", speed_control_joint_names_);
+    private_node_handle_.getParam("forward_angles", drive_forward_angles_);
+    private_node_handle_.getParam("stop_angles", stop_angles_);
 }
 
 void DrivingController::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
+    if ( !received_robot_positions_ ) {
+        ROS_ERROR("No robot positions received => No Update");
+        return;
+    }
 
     handleSteeringCommand(msg->axes[DrivingController::STEERING]);
 
@@ -109,6 +127,15 @@ void DrivingController::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
 void DrivingController::handleNewJointStateEvent(sensor_msgs::JointStateConstPtr msg) {
     robot_joint_names_ = msg->name;
     robot_joint_positions_ = msg->position;
+    received_robot_positions_ = true;
+}
+
+void DrivingController::handleNewTimeFromStart(std_msgs::Float64ConstPtr msg) {
+    time_from_start_ = msg->data;
+}
+
+void DrivingController::handleNewSpeedFactor(std_msgs::Float64ConstPtr msg) {
+    steering_sensitivity_ = msg->data;
 }
 
 void DrivingController::setSteeringInverted(bool inverted) {
@@ -116,10 +143,11 @@ void DrivingController::setSteeringInverted(bool inverted) {
 }
 
 void DrivingController::allStop() {
+
     all_stop_active_ = !all_stop_active_;
 
     // stop driving
-    std::vector<double> all_stop_leg_position = getRobotJointPositions(leg_joint_names_, speed_control_joint_name_, all_stop_angle_);
+    std::vector<double> all_stop_leg_position = getRobotJointPositions(leg_joint_names_, speed_control_joint_names_, stop_angles_);
     trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(all_stop_leg_position, leg_joint_names_);
     speed_control_cmd_pub_.publish(trajectory_msg);
 
@@ -127,6 +155,18 @@ void DrivingController::allStop() {
     std::vector<double> current_steering_position = getRobotJointPositions(steering_joint_names_);
     trajectory_msg = generateTrajectoryMsg(current_steering_position, steering_joint_names_);
     steering_control_cmd_pub_.publish(trajectory_msg);
+
+    // send info to UI
+    if ( all_stop_active_ ) {
+        ROS_INFO("All-Stop active! Steering blocked!");
+    }
+    else {
+        ROS_INFO("All-Stop released");
+    }
+
+    std_msgs::Bool all_stop_active_msg;
+    all_stop_active_msg.data = all_stop_active_;
+    all_stop_enabled_pub_.publish(all_stop_active_msg);
 }
 
 void DrivingController::moveHead(int value) {
@@ -135,6 +175,10 @@ void DrivingController::moveHead(int value) {
 
 void DrivingController::changeSteeringSensitivity(double diff) {
     steering_sensitivity_ += diff;
+
+    std_msgs::Float64 factor_msg;
+    factor_msg.data = steering_sensitivity_;
+    speed_control_factor_pub_.publish(factor_msg);
 }
 
 void DrivingController::handleSteeringCommand(double value) {
@@ -143,17 +187,17 @@ void DrivingController::handleSteeringCommand(double value) {
 
 void DrivingController::forwardDrive(bool drive) {
     if ( all_stop_active_ ) {
-        ROS_INFO("E-Stop active! Steering blocked!");
+        ROS_INFO("All-Stop active! Steering blocked!");
         return;
     }
 
     trajectory_msgs::JointTrajectory trajectory_msg;
     if ( drive ) {
-        std::vector<double> forward_positions = getRobotJointPositions(leg_joint_names_, speed_control_joint_name_, drive_forward_angle_);
+        std::vector<double> forward_positions = getRobotJointPositions(leg_joint_names_, speed_control_joint_names_, drive_forward_angles_);
         trajectory_msg = generateTrajectoryMsg(forward_positions, leg_joint_names_);
     }
     else {
-        std::vector<double> stop_positions = getRobotJointPositions(leg_joint_names_, speed_control_joint_name_, stop_angle_);
+        std::vector<double> stop_positions = getRobotJointPositions(leg_joint_names_, speed_control_joint_names_, stop_angles_);
         trajectory_msg = generateTrajectoryMsg(stop_positions, leg_joint_names_);
     }
 
@@ -204,13 +248,27 @@ double DrivingController::getPreviousValue(double value) {
     return (--steering_key_frames_.end())->first;
 }
 
-std::vector<double> DrivingController::getRobotJointPositions(std::vector<std::string> &joint_names, std::string replace_joint_name, double replace_joint_angle) {
+std::vector<double> DrivingController::getRobotJointPositions(std::vector<std::string> &joint_names, std::vector<std::string> replace_joint_names, std::vector<double> replace_joint_angles) {
     std::vector<double> joint_positions;
+
     for ( int i = 0; i < joint_names.size(); i++ ) {
-        if ( joint_names[i] == replace_joint_name ) {
-            joint_positions.push_back(replace_joint_angle);
+        bool joint_set = false;
+
+        // see if this is one joint to replace
+        for ( int j = 0; j < replace_joint_names.size(); j++ ) {
+            if ( joint_names[i] == replace_joint_names[j] ) {
+                joint_positions.push_back(replace_joint_angles[j]);
+
+                // remove already found values
+                replace_joint_names.erase (replace_joint_names.begin()+j);
+                replace_joint_angles.erase(replace_joint_angles.begin()+j);
+
+                joint_set = true;
+                break;
+            }
         }
-        else {
+
+        if ( joint_set == false) { // nothing found => take current position
             std::vector<std::string>::iterator it = std::find(robot_joint_names_.begin(), robot_joint_names_.end(), joint_names[i]);
             int idx = distance(robot_joint_names_.begin(), it);
             joint_positions.push_back(robot_joint_positions_[idx]);
@@ -224,7 +282,7 @@ trajectory_msgs::JointTrajectory DrivingController::generateTrajectoryMsg(std::v
     trajectory_msgs::JointTrajectory trajectory_msg;
     trajectory_msgs::JointTrajectoryPoint trajectory_point;
     trajectory_point.positions = joint_angles;
-    trajectory_point.time_from_start = ros::Duration(1.0);
+    trajectory_point.time_from_start = ros::Duration(time_from_start_);
     trajectory_msg.points.push_back(trajectory_point);
     trajectory_msg.joint_names = joint_names;
 

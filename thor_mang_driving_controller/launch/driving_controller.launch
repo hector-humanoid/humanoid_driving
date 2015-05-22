@@ -1,10 +1,15 @@
 <?xml version="1.0"?>
 
 <launch>
-  <!--<node name="joy_node" pkg="joy" type="joy_node"/>-->
+  <node name="joy_node" pkg="joy" type="joy_node">
+    <rosparam param="dev">/dev/input/js0</rosparam>
+  </node>
   <node name="driving_controller" pkg="thor_mang_driving_controller" type="driving_controller" output="screen">
     <rosparam file="$(find thor_mang_driving_controller)/config/controller_topics.yaml"/>
-    <rosparam file="$(find thor_mang_driving_controller)/config/real_robot_1.yaml"/>
-    <rosparam file="$(find thor_mang_driving_controller)/config/leg_key_frames.yaml"/>
+    <rosparam file="$(find thor_mang_driving_controller)/config/test4.yaml"/>
+    <rosparam file="$(find thor_mang_driving_controller)/config/speed_configuration.yaml"/>
+  </node>
+  <node name="driving_widget" pkg="thor_mang_driving_widget" type="driving_widget" output="screen">
+    <rosparam param="camera_topic">/head_cam/image_raw</rosparam>
   </node>
 </launch>

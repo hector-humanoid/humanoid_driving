@@ -1,5 +1,5 @@
 leg_joints: [r_hip_yaw, r_hip_roll, r_hip_pitch, r_knee, r_ankle_pitch, r_ankle_roll]
 
-speed_control_joints: [r_ankle_pitch, r_hip_pitch]
+speed_control_joints: [r_ankle_pitch, r_knee]
 stop_angles: [0.0, 0.0]
 forward_angles: [1.0, 1.0]
