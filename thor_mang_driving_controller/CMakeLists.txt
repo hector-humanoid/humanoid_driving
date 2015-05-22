@@ -8,6 +8,8 @@ set(CMAKE_BUILD_TYPE Debug)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  message_generation
+  std_msgs
   roscpp  
   joy
 )
@@ -23,11 +25,24 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
+
+set(MSG_DEPS
+  std_msgs
+)
+
+set(MSG_FILES
+  DrivingCommand.msg
+)
+
+add_message_files(DIRECTORY msg FILES ${MSG_FILES})
+
+generate_messages(DEPENDENCIES ${MSG_DEPS})
+
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES vigir_drake_matlab
-CATKIN_DEPENDS 
-  DEPENDS joy
+CATKIN_DEPENDS
+  DEPENDS joy std_msgs
 )
 
 ###########

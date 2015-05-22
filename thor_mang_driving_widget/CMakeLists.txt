@@ -50,7 +50,7 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR} s
 
 add_executable(driving_widget ${UIC_FILES} ${SOURCE_FILES})
 target_link_libraries(driving_widget ${catkin_LIBRARIES} ${QT_LIBRARIES})
-add_dependencies(driving_widget ${catkin_EXPORTED_TARGETS})
+add_dependencies(driving_widget ${catkin_EXPORTED_TARGETS} driving_controller_generate_messages_cpp)
 
 add_library(${PROJECT_NAME} ${UIC_FILES} ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${QT_LIBRARIES})

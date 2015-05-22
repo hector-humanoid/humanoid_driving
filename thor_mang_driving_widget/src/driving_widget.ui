@@ -49,6 +49,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="pushButton_Shutdown">
+        <property name="text">
+         <string>Shutdown</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer_2">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -62,13 +69,33 @@
        </spacer>
       </item>
       <item>
-       <widget class="QLabel" name="label_AllStopActive">
+       <widget class="QLabel" name="label_DrivingActive">
         <property name="styleSheet">
-         <string notr="true">background-color:#FF0000;
-font-style:bold;</string>
+         <string notr="true">background-color:green;</string>
+        </property>
+        <property name="text">
+         <string>Driving!</string>
+        </property>
+        <property name="margin">
+         <number>3</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_AllStop">
+        <property name="styleSheet">
+         <string notr="true">QPushButton::checked {
+	background-color:#FF0000;
+}</string>
         </property>
         <property name="text">
          <string>ALL STOP!</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
         </property>
        </widget>
       </item>
@@ -85,7 +112,7 @@ font-style:bold;</string>
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,1">
+     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
         <item>
@@ -154,9 +181,9 @@ font-style:bold;</string>
          </widget>
         </item>
         <item row="2" column="0">
-         <widget class="QLabel" name="label_SpeedControlFactor">
+         <widget class="QLabel" name="label_SteeringSensitivity">
           <property name="text">
-           <string>Speed Control Factor:</string>
+           <string>Steering Sensitivity:</string>
           </property>
          </widget>
         </item>
@@ -171,7 +198,7 @@ font-style:bold;</string>
          </widget>
         </item>
         <item row="2" column="1">
-         <widget class="QDoubleSpinBox" name="spinBox_SpeedControlFactor">
+         <widget class="QDoubleSpinBox" name="spinBox_SteeringSensitivity">
           <property name="maximum">
            <double>10.000000000000000</double>
           </property>
@@ -183,14 +210,21 @@ font-style:bold;</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="0">
+        <item row="4" column="0">
          <widget class="QLabel" name="label_TimeFromStart">
           <property name="text">
            <string>time_from_start:</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_SteeringAngle">
+          <property name="text">
+           <string>Steering Angle:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
          <widget class="QDoubleSpinBox" name="spinBox_TimeFromStart">
           <property name="suffix">
            <string> s</string>
@@ -206,7 +240,7 @@ font-style:bold;</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="0" colspan="2">
+        <item row="9" column="0" colspan="2">
          <spacer name="verticalSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -219,13 +253,6 @@ font-style:bold;</string>
           </property>
          </spacer>
         </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_SteeringAngle">
-          <property name="text">
-           <string>Steering Angle:</string>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="1">
          <widget class="QLineEdit" name="lineEdit_SteeringAngle">
           <property name="text">
@@ -233,6 +260,23 @@ font-style:bold;</string>
           </property>
           <property name="readOnly">
            <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_HeadSensitivity">
+          <property name="text">
+           <string>Head Sensitivity:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QDoubleSpinBox" name="spinBox_HeadSensitivity">
+          <property name="maximum">
+           <double>10.000000000000000</double>
+          </property>
+          <property name="singleStep">
+           <double>0.100000000000000</double>
           </property>
          </widget>
         </item>
