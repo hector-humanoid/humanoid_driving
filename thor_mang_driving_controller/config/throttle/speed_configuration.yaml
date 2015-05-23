@@ -3,4 +3,4 @@ leg_joints: [r_hip_yaw, r_hip_roll, r_hip_pitch, r_knee, r_ankle_pitch, r_ankle_
 speed_control_joints: [r_ankle_pitch, r_hip_pitch, r_knee]
 stop_position: [0.22, 1.68, -1.15]
 forward_position: [0.33, 1.64, -1.06]
-safety_position: [0.22, 1.68, -1.15]
+safety_position: [0.22, 1.73, -1.15]

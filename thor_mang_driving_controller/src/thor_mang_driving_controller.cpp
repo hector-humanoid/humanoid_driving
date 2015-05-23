@@ -137,7 +137,7 @@ void DrivingController::initKeyFrames() {
     private_node_handle_.getParam("speed_control_joints", speed_control_joint_names_);
     private_node_handle_.getParam("forward_position", drive_forward_position_);
     private_node_handle_.getParam("stop_position", stop_position_);
-    private_node_handle_.getParam("stop_position", safety_position_);
+    private_node_handle_.getParam("safety_position", safety_position_);
 }
 
 

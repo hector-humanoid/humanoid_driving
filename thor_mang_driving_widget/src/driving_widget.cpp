@@ -368,7 +368,7 @@ void DrivingWidget::sendHeadCommand() {
     if ( head_move_to_default_ ) {
         bool reached_position = true;
         for ( int i = 0; i < target_head_positions.size(); i++ ) {
-            if ( target_head_positions[i] - head_default_position_[i] > 0.05 ) {
+            if ( std::abs(target_head_positions[i] - head_default_position_[i]) > 0.5 ) {
                 reached_position = false;
                 break;
             }
@@ -397,6 +397,9 @@ void DrivingWidget::sendHeadCommand() {
 
 
     trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(target_head_positions, head_joint_names_);
+    if(head_move_to_default_)
+        trajectory_msg.time_from_start = 1.0;
+
     head_command_pub_.publish(trajectory_msg);
 }
 
