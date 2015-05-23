@@ -57,14 +57,14 @@ void DrivingController::checkReceivedMessages() {
     }
 
     ros::Duration time_since_last_msg = ros::Time::now() - last_command_received_time_;
-    if ( time_since_last_msg >= ros::Duration(1.0)) { // OCS not alive? Go to "all stop"
+    if ( time_since_last_msg >= ros::Duration(1.0)) { // OCS not alive? Go to "all stop"	
         last_command_received_.all_stop = true;
         allStop();
 
         // inform OCS of current state (once a second)
         if ( ros::Time::now() - last_auto_stop_info_sent_time_ >= ros::Duration(1.0) ) {
             all_stop_enabled_pub_.publish(last_command_received_);
-
+            ROS_WARN("[DrivingController] OCS connection timed out. Going to All-Stop.");
         }
     }
 }
@@ -98,6 +98,10 @@ void DrivingController::handleDrivingCommand(thor_mang_driving_controller::Drivi
 void DrivingController::handleControllerEnable(std_msgs::BoolConstPtr msg) {
     controller_enabled_ = msg->data;
     controller_enable_ack_pub_.publish(msg);
+    if ( controller_enabled_ )
+        ROS_INFO("[DrivingController] Controller enabled."
+    else
+	ROS_INFO("[DrivingController] Controller disabled."
 }
 
 void DrivingController::updateSteering(double target_angle) {
