@@ -106,6 +106,12 @@ color:white;</string>
      <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="2,1">
       <item>
        <widget class="QLabel" name="label_CameraImage">
+        <property name="frameShape">
+         <enum>QFrame::StyledPanel</enum>
+        </property>
+        <property name="frameShadow">
+         <enum>QFrame::Sunken</enum>
+        </property>
         <property name="text">
          <string>No Camera Image</string>
         </property>
@@ -122,7 +128,23 @@ color:white;</string>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0">
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
+       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1,0">
+        <item>
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>1</width>
+            <height>3</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
         <item>
          <widget class="QLabel" name="label_TargetSteeringPosition">
           <property name="text">
@@ -161,6 +183,19 @@ color:white;</string>
           </property>
          </widget>
         </item>
+        <item>
+         <spacer name="verticalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
        </layout>
       </item>
       <item>
@@ -173,7 +208,7 @@ color:white;</string>
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>20</width>
+          <width>32</width>
           <height>20</height>
          </size>
         </property>

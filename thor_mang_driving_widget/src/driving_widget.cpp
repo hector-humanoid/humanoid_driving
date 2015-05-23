@@ -151,11 +151,14 @@ void DrivingWidget::drawWheelVisualization() {
     position_transform = QTransform(1.0, 0.0, 0.0, 1.0, car_width/2.0, -car_length/2.0);
     wheel = wheel_scene_.addRect(-wheel_width/2.0, -wheel_length/2.0, wheel_width, wheel_length, QPen(), QBrush(Qt::SolidPattern));
     wheel->setTransform(steering_transform*position_transform, true);
+
+    ui_->graphicsView_Wheels->centerOn(0.0, 0.0);
 }
 
 void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
     QImage img(&(msg->data[0]), msg->width, msg->height, QImage::Format_RGB888);
-    ui_->label_CameraImage->setPixmap(QPixmap::fromImage(img));
+    QPixmap pixmap = QPixmap::fromImage(img.scaled( ui_->label_CameraImage->width()-8, ui_->label_CameraImage->height()-8, Qt::KeepAspectRatio));
+    ui_->label_CameraImage->setPixmap(pixmap);
 }
 
 void DrivingWidget::SLO_SteeringSensitivityChanged(double sensitivity) {
