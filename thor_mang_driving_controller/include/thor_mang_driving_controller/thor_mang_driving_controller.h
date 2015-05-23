@@ -23,7 +23,7 @@ public:
   void handleDrivingCommand(thor_mang_driving_controller::DrivingCommandConstPtr msg);
   void handleNewJointStateEvent(sensor_msgs::JointStateConstPtr msg);
   void handleNewTimeFromStart(std_msgs::Float64ConstPtr msg);
-  void handleShutDown(std_msgs::EmptyConstPtr msg);
+  void handleControllerEnable(std_msgs::BoolConstPtr msg);
 
   void updateSteering(double target_angle);
   void updateDriveForward(bool drive);
@@ -47,15 +47,17 @@ private:
   // Subscribers
   ros::Subscriber joint_state_sub_;
   ros::Subscriber driving_command_sub_;
-  ros::Subscriber shutdown_sub_;
+  ros::Subscriber controller_enable_sub_;
 
   // Publisher for controller commands
   ros::Publisher steering_control_cmd_pub_;
   ros::Publisher speed_control_cmd_pub_;
   ros::Publisher all_stop_enabled_pub_;
+  ros::Publisher controller_enable_ack_pub_;
 
   // steering command stuff
   thor_mang_driving_controller::DrivingCommand last_command_received_;
+  bool received_first_command_msg_;
   double time_from_start_;
 
   // joint names used for the target poses
@@ -79,6 +81,8 @@ private:
   // time when the last command was received (for alive-messages)
   ros::Time last_command_received_time_;
   ros::Time last_auto_stop_info_sent_time_;
+
+  bool controller_enabled_;
 };
 
 

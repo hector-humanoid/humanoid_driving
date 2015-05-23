@@ -35,7 +35,8 @@ class DrivingWidget : public QMainWindow
       STEERING_SENSITIVITY_PLUS=7,
       STEERING_SENSITIVITY_MINUS=6,
       HEAD_SENSITIVITY_PLUS=5,
-      HEAD_SENSITIVITY_MINUS=4
+      HEAD_SENSITIVITY_MINUS=4,
+      HEAD_MODE_TO_DEFAULT=11
     };
 
 public:
@@ -48,23 +49,23 @@ public:
     void handleNewCameraImage(sensor_msgs::ImageConstPtr msg);
     void handleAllStopEnabled(thor_mang_driving_controller::DrivingCommandConstPtr msg);
 
+    void handleControllerEnableACK(std_msgs::BoolConstPtr msg);
+
 protected:
     void timerEvent(QTimerEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
 
 public slots:
-    void SLO_SteeringSensitivityChanged(double sensitivity);
-    void SLO_HeadSensitivityChanged(double sensitivity);
-    void SLO_TimeFromStartChanged(double time_from_start);
+    void SLO_SteeringSensitivityChanged();
+    void SLO_HeadSensitivityChanged();
     void SLO_ShowCameraImage(bool show);
     void SLO_AllStopButtonChecked(bool active);
-    void SLO_Shutdown();
+    void SLO_ToggleDrivingMode();
 
 private:
     void sendDrivingCommand();
-    void calculateSteeringAngle();
-
     void sendHeadCommand();
+    void calculateSteeringAngle();
 
     void updateUI();
     void drawWheelVisualization();
@@ -99,9 +100,12 @@ private:
     ros::Subscriber all_stop_enabled_sub_;
 
     // Steering Publishers
-    ros::Publisher shutdown_pub_;
     ros::Publisher head_command_pub_;
     ros::Publisher driving_command_pub_;
+
+    // Enable / Disable controller
+    ros::Publisher controller_enable_pub_;
+    ros::Subscriber controller_enable_ack_sub_;
 
     // Steering parameters
     double steering_sensitivity_;
@@ -118,13 +122,24 @@ private:
     double absolute_steering_angle_;
     bool drive_forward_;
     double time_from_start_;
+    bool reached_steering_limit_;
 
     // Head control elements
+    std::vector<std::string> head_joint_names_;
+    std::vector<double> head_default_position_;
     double head_tilt_speed_;
     double head_pan_speed_;
+    bool head_move_to_default_;
+
+    // allow sensitivity changes
+    bool allow_head_sensitivity_change_;
+    bool allow_steering_sensitivity_change_;
 
     // Current joint state
     std::vector<std::string> robot_joint_names_;
     std::vector<double> robot_joint_positions_;
+
+    // is controller enabled
+    bool controller_enabled_;
 };
 

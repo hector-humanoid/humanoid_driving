@@ -10,14 +10,16 @@ DrivingController::DrivingController() :
     initKeyFrames();
 
     last_command_received_.all_stop.data = true;
-    last_command_received_.time_from_start.data = 0.1;
     last_command_received_.absolute_steering_angle.data = 0.0;
     last_command_received_.drive_forward.data = false;
-    time_from_start_ = 0.1;
+    time_from_start_ = 5.0; // 5s for initial starting position
 
     received_robot_positions_ = false;
+    received_first_command_msg_ = false;
     last_command_received_time_ = ros::Time::now();
     last_auto_stop_info_sent_time_ = ros::Time::now();
+
+    controller_enabled_ = false;
 
     // steering publisher
     std::string steering_controller_topic;
@@ -40,8 +42,8 @@ DrivingController::DrivingController() :
     joint_state_sub_ = node_handle_.subscribe(joint_state_topic, 1, &DrivingController::handleNewJointStateEvent, this);
 
     // shutdown subscriber
-    shutdown_sub_ = node_handle_.subscribe("driving_controller/shutdown", 1, &DrivingController::handleShutDown, this);
-
+    controller_enable_sub_ = node_handle_.subscribe("driving_controller/controller_enable", 1, &DrivingController::handleControllerEnable, this);
+    controller_enable_ack_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/controller_enable_ack", 1, false);
 
 }
 
@@ -50,7 +52,7 @@ DrivingController::~DrivingController() {
 }
 
 void DrivingController::checkReceivedMessages() {
-    if ( !received_robot_positions_ ) {
+    if ( !received_robot_positions_ || !received_first_command_msg_ || !controller_enabled_) {
         return;
     }
 
@@ -73,9 +75,12 @@ void DrivingController::handleDrivingCommand(thor_mang_driving_controller::Drivi
         return;
     }
 
+    if ( !controller_enabled_ ) {
+        return;
+    }
+
     last_command_received_time_ = ros::Time::now();
     last_command_received_ = *msg;
-    time_from_start_ = msg->time_from_start.data;
 
     if ( last_command_received_.all_stop.data ) {
         allStop();
@@ -84,13 +89,22 @@ void DrivingController::handleDrivingCommand(thor_mang_driving_controller::Drivi
         updateSteering(msg->absolute_steering_angle.data);
         updateDriveForward(msg->drive_forward.data);
     }
+
+    // first message received => go to default behaviour
+    received_first_command_msg_ = true;
+    time_from_start_ = 0.1;
 }
 
-void DrivingController::handleShutDown(std_msgs::EmptyConstPtr msg) {
-    ros::shutdown();
+void DrivingController::handleControllerEnable(std_msgs::BoolConstPtr msg) {
+    controller_enabled_ = msg->data;
+    controller_enable_ack_pub_.publish(msg);
 }
 
 void DrivingController::updateSteering(double target_angle) {
+    if ( !controller_enabled_ ) {
+        return;
+    }
+
     // map to range [0,360]
     while ( target_angle >= 360.0 )  target_angle -= 360.0;
     while ( target_angle < 0 ) target_angle += 360.0;
@@ -147,6 +161,10 @@ void DrivingController::allStop() {
 
 
 void DrivingController::updateDriveForward(bool drive) {
+    if ( !controller_enabled_ ) {
+        return;
+    }
+
     trajectory_msgs::JointTrajectory trajectory_msg;
     if ( drive ) {
         std::vector<double> forward_positions = getRobotJointPositions(leg_joint_names_, speed_control_joint_names_, drive_forward_position_);
