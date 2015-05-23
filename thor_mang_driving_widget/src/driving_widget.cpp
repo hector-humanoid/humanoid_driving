@@ -2,12 +2,8 @@
 #include "ui_driving_widget.h"
 
 #include <ros/ros.h>
-#include <ros/package.h>
 
-
-#include<QFile>
-#include<QTextStream>
-#include<QDebug>
+#include <QGraphicsItem>
 
 DrivingWidget::DrivingWidget(QWidget *parent) :
     QMainWindow(parent),
@@ -67,6 +63,9 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
 
     timer_.start(33, this);
 
+    // UI init
+    drawWheelVisualization();
+    ui_->graphicsView_Wheels->setScene(&wheel_scene_);
     updateUI();
 }
 
@@ -90,8 +89,12 @@ void DrivingWidget::timerEvent(QTimerEvent *event)
         ros::spinOnce();
 }
 
+void DrivingWidget::resizeEvent(QResizeEvent *event) {
+    drawWheelVisualization();
+}
+
 void DrivingWidget::updateUI() {
-    double wheel_position = steering_angle_*45/540;
+    double wheel_position = absolute_steering_angle_*45/540;
 
     // update line edits and spin boxes
     ui_->lineEdit_WheelAngle->setText( QString("%1 \260").arg(wheel_position, 3, 'f', 1));
@@ -112,6 +115,42 @@ void DrivingWidget::updateUI() {
     if ( limited_steering_angle >= 180.0 )  limited_steering_angle -= 360.0;
 
     ui_->dial_TargetSteeringPosition->setValue( (int)limited_steering_angle);
+
+    drawWheelVisualization();
+}
+
+void DrivingWidget::drawWheelVisualization() {
+    double wheel_angle = absolute_steering_angle_*45/540;
+    double total_width = ui_->graphicsView_Wheels->visibleRegion().boundingRect().width();
+    double total_height = ui_->graphicsView_Wheels->visibleRegion().boundingRect().height();
+    double car_length = std::min(total_width, total_height)-120;
+    double car_width = car_length / 2.0;
+    double wheel_width = car_width / 4.0;
+    double wheel_length = wheel_width*3.0;
+
+    QTransform base_wheel_transform(1.0, 0.0, 0.0, 1.0, -wheel_width/2.0, -wheel_length/2.0);
+
+    wheel_scene_.clear();
+    wheel_scene_.addRect(-car_width/2.0, -car_length/2.0, car_width, car_length );
+
+    // back wheels
+    QGraphicsRectItem *wheel = wheel_scene_.addRect(-car_width/2.0, car_length/2.0, wheel_width, wheel_length, QPen(), QBrush(Qt::SolidPattern));
+    wheel->setTransform(base_wheel_transform);
+
+    wheel = wheel_scene_.addRect(car_width/2.0, car_length/2.0, wheel_width, wheel_length, QPen(), QBrush(Qt::SolidPattern));
+    wheel->setTransform(base_wheel_transform);
+
+    // front wheels
+    QTransform steering_transform;
+    steering_transform.rotate(wheel_angle);
+
+    QTransform position_transform(1.0, 0.0, 0.0, 1.0, -car_width/2.0, -car_length/2.0);
+    wheel = wheel_scene_.addRect(-wheel_width/2.0, -wheel_length/2.0, wheel_width, wheel_length, QPen(), QBrush(Qt::SolidPattern));
+    wheel->setTransform(steering_transform*position_transform, true);
+
+    position_transform = QTransform(1.0, 0.0, 0.0, 1.0, car_width/2.0, -car_length/2.0);
+    wheel = wheel_scene_.addRect(-wheel_width/2.0, -wheel_length/2.0, wheel_width, wheel_length, QPen(), QBrush(Qt::SolidPattern));
+    wheel->setTransform(steering_transform*position_transform, true);
 }
 
 void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {

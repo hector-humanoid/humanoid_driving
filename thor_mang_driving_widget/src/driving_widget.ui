@@ -71,7 +71,8 @@
       <item>
        <widget class="QLabel" name="label_DrivingActive">
         <property name="styleSheet">
-         <string notr="true">background-color:green;</string>
+         <string notr="true">background-color:green;
+color:white;</string>
         </property>
         <property name="text">
          <string>Driving!</string>
@@ -102,14 +103,21 @@
      </layout>
     </item>
     <item>
-     <widget class="QLabel" name="label_CameraImage">
-      <property name="text">
-       <string>No Camera Image</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
+     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="2,1">
+      <item>
+       <widget class="QLabel" name="label_CameraImage">
+        <property name="text">
+         <string>No Camera Image</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGraphicsView" name="graphicsView_Wheels"/>
+      </item>
+     </layout>
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0">

@@ -12,6 +12,7 @@
 
 #include <QMainWindow>
 #include <QBasicTimer>
+#include <QGraphicsScene>
 
 namespace Ui {
 class DrivingWidget;
@@ -48,7 +49,8 @@ public:
     void handleAllStopEnabled(std_msgs::BoolConstPtr msg);
 
 protected:
-    void timerEvent(QTimerEvent *event);
+    void timerEvent(QTimerEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 public slots:
     void SLO_SteeringSensitivityChanged(double sensitivity);
@@ -63,22 +65,24 @@ private:
     void calculateSteeringAngle();
 
     void sendHeadCommand();
+
     void updateUI();
+    void drawWheelVisualization();
 
     void handleHeadCommand(double tilt, double pan);
     void handleSteeringCommand(double step);
 
-
-
     trajectory_msgs::JointTrajectory generateTrajectoryMsg(std::vector<double> &joint_angles, std::vector<std::string> joint_names);
 
 
+    ros::NodeHandle node_handle_;
+    ros::NodeHandle node_handle_private_;
 
     Ui::DrivingWidget *ui_;
     QBasicTimer timer_;
 
-    ros::NodeHandle node_handle_;
-    ros::NodeHandle node_handle_private_;
+    // Wheel visualization
+    QGraphicsScene wheel_scene_;
 
     // Robot State Subscriber
     ros::Subscriber robot_state_sub_;
@@ -88,6 +92,7 @@ private:
     ros::Subscriber joypad_command_sub_;
 
     // Camera Image Subscriber
+    std::string camera_topic_;
     ros::Subscriber camera_image_sub_;
 
     // Robot Enabled All Stop Subscriber
@@ -97,10 +102,6 @@ private:
     ros::Publisher shutdown_pub_;
     ros::Publisher head_command_pub_;
     ros::Publisher driving_command_pub_;
-
-    // Topic used for camera images
-    std::string camera_topic_;
-
 
     // Steering parameters
     double steering_sensitivity_;

@@ -51,7 +51,7 @@ class LegPositionSaver():
 
     def save_leg_positions_to_disc(self, file_name):
         rp = RosPack()
-        save_path = rp.get_path('thor_mang_driving_controller') + '/config/' + file_name
+        save_path = rp.get_path('thor_mang_driving_controller') + '/config/throttle/' + file_name
 
         yaml_dict = dict()
         yaml_dict.update({'leg_joints': leg_joints})

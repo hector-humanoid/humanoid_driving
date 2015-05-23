@@ -56,7 +56,7 @@ class KeyPositionSaver():
 
     def save_key_positions_to_disc(self, file_name):
         rp = RosPack()
-        save_path = rp.get_path('thor_mang_driving_controller') + '/config/'
+        save_path = rp.get_path('thor_mang_driving_controller') + '/config/steering/'
 
         yaml_dict = dict()
         yaml_dict.update({'joints': joints})
