@@ -50,6 +50,10 @@ DrivingController::~DrivingController() {
 }
 
 void DrivingController::checkReceivedMessages() {
+    if ( !received_robot_positions_ ) {
+        return;
+    }
+
     ros::Duration time_since_last_msg = ros::Time::now() - last_command_received_time_;
     if ( time_since_last_msg >= ros::Duration(1.0)) { // OCS not alive? Go to "all stop"
         last_command_received_.all_stop.data = true;
