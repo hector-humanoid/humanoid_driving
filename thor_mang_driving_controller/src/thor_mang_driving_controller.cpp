@@ -99,9 +99,9 @@ void DrivingController::handleControllerEnable(std_msgs::BoolConstPtr msg) {
     controller_enabled_ = msg->data;
     controller_enable_ack_pub_.publish(msg);
     if ( controller_enabled_ )
-        ROS_INFO("[DrivingController] Controller enabled."
+        ROS_INFO("[DrivingController] Controller enabled.");
     else
-	ROS_INFO("[DrivingController] Controller disabled."
+	ROS_INFO("[DrivingController] Controller disabled.");
 }
 
 void DrivingController::updateSteering(double target_angle) {
