@@ -67,8 +67,9 @@ private:
     void sendHeadCommand();
     void calculateSteeringAngle();
 
-    void updateUI();
+    void updateUI(bool update_steering_sensitivity = false, bool update_head_sensitivity = false);
     void drawWheelVisualization();
+    void setGUIEnabled(bool enable);
 
     void handleHeadCommand(double tilt, double pan);
     void handleSteeringCommand(double step);
@@ -122,7 +123,6 @@ private:
     double absolute_steering_angle_;
     bool drive_forward_;
     double time_from_start_;
-    bool reached_steering_limit_;
 
     // Head control elements
     std::vector<std::string> head_joint_names_;
