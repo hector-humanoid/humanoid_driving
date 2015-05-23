@@ -55,8 +55,8 @@ private:
   ros::Publisher all_stop_enabled_pub_;
 
   // steering command stuff
+  thor_mang_driving_controller::DrivingCommand last_command_received_;
   double time_from_start_;
-  bool all_stop_;
 
   // joint names used for the target poses
   std::vector<std::string> steering_joint_names_;

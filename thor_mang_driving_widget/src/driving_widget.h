@@ -46,7 +46,7 @@ public:
     void handleNewJointStateEvent(sensor_msgs::JointStateConstPtr msg);
 
     void handleNewCameraImage(sensor_msgs::ImageConstPtr msg);
-    void handleAllStopEnabled(std_msgs::BoolConstPtr msg);
+    void handleAllStopEnabled(thor_mang_driving_controller::DrivingCommandConstPtr msg);
 
 protected:
     void timerEvent(QTimerEvent *event) override;

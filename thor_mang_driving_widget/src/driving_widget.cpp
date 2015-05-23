@@ -232,8 +232,15 @@ void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
     updateUI();
 }
 
-void DrivingWidget::handleAllStopEnabled(std_msgs::BoolConstPtr msg) {
-    all_stop_ = msg->data;
+void DrivingWidget::handleAllStopEnabled(thor_mang_driving_controller::DrivingCommandConstPtr msg) {
+    all_stop_ = msg->all_stop.data;
+    drive_forward_ = msg->drive_forward.data;
+    absolute_steering_angle_ = msg->absolute_steering_angle.data;
+    time_from_start_ = msg->time_from_start.data;
+
+    while ( steering_angle_ >= 360.0 )  steering_angle_ -= 360.0;
+    while ( steering_angle_ < 0 )       steering_angle_ += 360.0;
+
     updateUI();
 }
 
@@ -248,7 +255,7 @@ void DrivingWidget::sendDrivingCommand() {
 
     thor_mang_driving_controller::DrivingCommand driving_command_msg;
     driving_command_msg.all_stop.data = all_stop_;
-    driving_command_msg.steering_angle.data = steering_angle_;
+    driving_command_msg.absolute_steering_angle.data = absolute_steering_angle_;
     driving_command_msg.drive_forward.data = drive_forward_;
     driving_command_msg.time_from_start.data = time_from_start_;
     driving_command_pub_.publish(driving_command_msg);

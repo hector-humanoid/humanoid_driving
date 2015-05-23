@@ -9,8 +9,12 @@ DrivingController::DrivingController() :
 {
     initKeyFrames();
 
-    all_stop_ = true;
+    last_command_received_.all_stop.data = true;
+    last_command_received_.time_from_start.data = 0.1;
+    last_command_received_.absolute_steering_angle.data = 0.0;
+    last_command_received_.drive_forward.data = false;
     time_from_start_ = 0.1;
+
     received_robot_positions_ = false;
     last_command_received_time_ = ros::Time::now();
     last_auto_stop_info_sent_time_ = ros::Time::now();
@@ -25,7 +29,7 @@ DrivingController::DrivingController() :
     speed_control_cmd_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(speed_controller_topic, 1, false);
 
     // all stop enabled on robot side
-    all_stop_enabled_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/all_stop", 1, true);
+    all_stop_enabled_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingCommand>("driving_controller/all_stop", 1, true);
 
     // steering command subscriber
     driving_command_sub_ = node_handle_.subscribe("driving_controller/driving_command", 1, &DrivingController::handleDrivingCommand, this);
@@ -48,15 +52,13 @@ DrivingController::~DrivingController() {
 void DrivingController::checkReceivedMessages() {
     ros::Duration time_since_last_msg = ros::Time::now() - last_command_received_time_;
     if ( time_since_last_msg >= ros::Duration(1.0)) { // OCS not alive? Go to "all stop"
-        all_stop_ = true;
+        last_command_received_.all_stop.data = true;
         allStop();
 
-        // inform OCS (once a second)
+        // inform OCS of current state (once a second)
         if ( ros::Time::now() - last_auto_stop_info_sent_time_ >= ros::Duration(1.0) ) {
-            std_msgs::Bool all_stop_enabled_msg;
-            all_stop_enabled_msg.data = true;
-            all_stop_enabled_pub_.publish(all_stop_enabled_msg);
-            last_auto_stop_info_sent_time_ = ros::Time::now();
+            all_stop_enabled_pub_.publish(last_command_received_);
+
         }
     }
 }
@@ -68,15 +70,14 @@ void DrivingController::handleDrivingCommand(thor_mang_driving_controller::Drivi
     }
 
     last_command_received_time_ = ros::Time::now();
-
+    last_command_received_ = *msg;
     time_from_start_ = msg->time_from_start.data;
-    all_stop_ = msg->all_stop.data;
 
-    if ( all_stop_ ) {
+    if ( last_command_received_.all_stop.data ) {
         allStop();
     }
     else {
-        updateSteering(msg->steering_angle.data);
+        updateSteering(msg->absolute_steering_angle.data);
         updateDriveForward(msg->drive_forward.data);
     }
 }
@@ -86,6 +87,10 @@ void DrivingController::handleShutDown(std_msgs::EmptyConstPtr msg) {
 }
 
 void DrivingController::updateSteering(double target_angle) {
+    // map to range [0,360]
+    while ( target_angle >= 360.0 )  target_angle -= 360.0;
+    while ( target_angle < 0 ) target_angle += 360.0;
+
     std::vector<double> interpolated_frame = getInterpolatedKeyFrame(target_angle, 360.0);
     trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(interpolated_frame, steering_joint_names_);
     steering_control_cmd_pub_.publish(trajectory_msg);
