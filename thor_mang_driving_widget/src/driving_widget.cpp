@@ -64,8 +64,10 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     controller_enable_ack_sub_ = node_handle_.subscribe("driving_controller/controller_enable_ack", 1, &DrivingWidget::handleControllerEnableACK, this);
 
     // setup user interface
-    connect(ui_->pushButton_ConfirmSteeringSensitivity, SIGNAL(clicked()), this, SLOT(SLO_SteeringSensitivityChanged()));
-    connect(ui_->pushButton_ConfirmHeadSensitivity, SIGNAL(clicked()), this, SLOT(SLO_HeadSensitivityChanged()));
+    connect(ui_->pushButton_ConfirmSteeringSensitivity, SIGNAL(clicked()), this, SLOT(SLO_SteeringSensitivityConfirmed()));
+    connect(ui_->spinBox_SteeringSensitivity, SIGNAL(valueChanged(double)), this, SLOT(SLO_SteeringSensitivityChanged()));
+    connect(ui_->pushButton_ConfirmHeadSensitivity, SIGNAL(clicked()), this, SLOT(SLO_HeadSensitivityConfirmed()));
+    connect(ui_->spinBox_HeadSensitivity, SIGNAL(valueChanged(double)), this, SLOT(SLO_HeadSensitivityChanged()));
     connect(ui_->pushButton_ShowCameraImage, SIGNAL(toggled(bool)), this, SLOT(SLO_ShowCameraImage(bool)));
     connect(ui_->pushButton_AllStop, SIGNAL(clicked(bool)), this, SLOT(SLO_AllStopButtonChecked(bool)));
     connect(ui_->pushButton_ToggleDrivingMode, SIGNAL(clicked()), this, SLOT(SLO_ToggleDrivingMode()));
@@ -109,11 +111,17 @@ void DrivingWidget::updateUI(bool update_steering_sensitivity, bool update_head_
     ui_->lineEdit_WheelAngle->setText( QString("%1 \260").arg(wheel_position, 3, 'f', 1));
     ui_->lineEdit_SteeringAngle->setText(QString("%1 \260").arg(absolute_steering_angle_, 3, 'f', 1));
 
-    if ( update_steering_sensitivity )
+    if ( update_steering_sensitivity ) {
+        ui_->spinBox_SteeringSensitivity->blockSignals(true);
         ui_->spinBox_SteeringSensitivity->setValue(steering_sensitivity_);
+        ui_->spinBox_SteeringSensitivity->blockSignals(false);
+    }
 
-    if ( update_head_sensitivity )
+    if ( update_head_sensitivity ) {
+        ui_->spinBox_HeadSensitivity->blockSignals(true);
         ui_->spinBox_HeadSensitivity->setValue(head_sensitivity_);
+        ui_->spinBox_HeadSensitivity->blockSignals(false);
+    }
 
     ui_->pushButton_AllStop->setChecked(all_stop_);
     ui_->label_DrivingActive->setVisible(drive_forward_);
@@ -190,11 +198,21 @@ void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
 }
 
 void DrivingWidget::SLO_SteeringSensitivityChanged() {
+    ui_->pushButton_ConfirmSteeringSensitivity->setStyleSheet("color:#FF0000");
+}
+
+void DrivingWidget::SLO_SteeringSensitivityConfirmed() {
     steering_sensitivity_ = ui_->spinBox_SteeringSensitivity->value();
+    ui_->pushButton_ConfirmSteeringSensitivity->setStyleSheet("color:#000000");
 }
 
 void DrivingWidget::SLO_HeadSensitivityChanged() {
+    ui_->pushButton_ConfirmHeadSensitivity->setStyleSheet("color:#FF0000");
+}
+
+void DrivingWidget::SLO_HeadSensitivityConfirmed() {
     head_sensitivity_ = ui_->spinBox_HeadSensitivity->value();
+    ui_->pushButton_ConfirmHeadSensitivity->setStyleSheet("color:#000000");
 }
 
 void DrivingWidget::SLO_ShowCameraImage(bool show) {
@@ -278,9 +296,9 @@ void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
 }
 
 void DrivingWidget::handleAllStopEnabled(thor_mang_driving_controller::DrivingCommandConstPtr msg) {
-    all_stop_ = msg->all_stop.data;
-    drive_forward_ = msg->drive_forward.data;
-    absolute_steering_angle_ = msg->absolute_steering_angle.data;
+    all_stop_ = msg->all_stop;
+    drive_forward_ = msg->drive_forward;
+    absolute_steering_angle_ = msg->absolute_steering_angle;
 
     steering_angle_ = absolute_steering_angle_;
     while ( steering_angle_ >= 360.0 )  steering_angle_ -= 360.0;
@@ -318,9 +336,9 @@ void DrivingWidget::sendDrivingCommand() {
     calculateSteeringAngle();
 
     thor_mang_driving_controller::DrivingCommand driving_command_msg;
-    driving_command_msg.all_stop.data = all_stop_;
-    driving_command_msg.absolute_steering_angle.data = absolute_steering_angle_;
-    driving_command_msg.drive_forward.data = drive_forward_;
+    driving_command_msg.all_stop = all_stop_;
+    driving_command_msg.absolute_steering_angle = absolute_steering_angle_;
+    driving_command_msg.drive_forward = drive_forward_;
     driving_command_pub_.publish(driving_command_msg);
 }
 

@@ -56,8 +56,12 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
 
 public slots:
+    void SLO_SteeringSensitivityConfirmed();
     void SLO_SteeringSensitivityChanged();
+
+    void SLO_HeadSensitivityConfirmed();
     void SLO_HeadSensitivityChanged();
+
     void SLO_ShowCameraImage(bool show);
     void SLO_AllStopButtonChecked(bool active);
     void SLO_ToggleDrivingMode();

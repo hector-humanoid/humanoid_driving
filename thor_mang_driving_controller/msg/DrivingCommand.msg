@@ -1,8 +1,8 @@
 # Cease all operation, go to safe pose
-std_msgs/Bool all_stop
+bool all_stop
 
 # Press throttle pedal?
-std_msgs/Bool drive_forward
+bool drive_forward
 
 # Target steering angle ([0,...,360])
-std_msgs/Float64 absolute_steering_angle
+float64 absolute_steering_angle

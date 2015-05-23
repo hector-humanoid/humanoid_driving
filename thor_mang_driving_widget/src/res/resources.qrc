@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="imgs">
+    <file>hector_logo.png</file>
+  </qresource>
+</RCC>

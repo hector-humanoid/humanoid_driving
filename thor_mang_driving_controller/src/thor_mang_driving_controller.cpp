@@ -9,9 +9,9 @@ DrivingController::DrivingController() :
 {
     initKeyFrames();
 
-    last_command_received_.all_stop.data = true;
-    last_command_received_.absolute_steering_angle.data = 0.0;
-    last_command_received_.drive_forward.data = false;
+    last_command_received_.all_stop = true;
+    last_command_received_.absolute_steering_angle = 0.0;
+    last_command_received_.drive_forward = false;
     time_from_start_ = 5.0; // 5s for initial starting position
 
     received_robot_positions_ = false;
@@ -58,7 +58,7 @@ void DrivingController::checkReceivedMessages() {
 
     ros::Duration time_since_last_msg = ros::Time::now() - last_command_received_time_;
     if ( time_since_last_msg >= ros::Duration(1.0)) { // OCS not alive? Go to "all stop"
-        last_command_received_.all_stop.data = true;
+        last_command_received_.all_stop = true;
         allStop();
 
         // inform OCS of current state (once a second)
@@ -82,12 +82,12 @@ void DrivingController::handleDrivingCommand(thor_mang_driving_controller::Drivi
     last_command_received_time_ = ros::Time::now();
     last_command_received_ = *msg;
 
-    if ( last_command_received_.all_stop.data ) {
+    if ( last_command_received_.all_stop ) {
         allStop();
     }
     else {
-        updateSteering(msg->absolute_steering_angle.data);
-        updateDriveForward(msg->drive_forward.data);
+        updateSteering(msg->absolute_steering_angle);
+        updateDriveForward(msg->drive_forward);
     }
 
     // first message received => go to default behaviour

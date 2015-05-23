@@ -37,6 +37,8 @@ qt4_wrap_ui(UIC_FILES
   src/driving_widget.ui
 )
 
+QT4_ADD_RESOURCES(driving_widget_RESOURCES_RCC src/res/resources.qrc)
+
 ## Here we specify the list of source files, including the output of
 ## the previous command which is stored in ``${MOC_FILES}``.
 
@@ -48,7 +50,7 @@ set(SOURCE_FILES
 )
 include_directories(include ${catkin_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR} src)
 
-add_executable(driving_widget ${UIC_FILES} ${SOURCE_FILES})
+add_executable(driving_widget ${UIC_FILES} ${SOURCE_FILES} ${driving_widget_RESOURCES_RCC})
 target_link_libraries(driving_widget ${catkin_LIBRARIES} ${QT_LIBRARIES})
 add_dependencies(driving_widget ${catkin_EXPORTED_TARGETS})
 add_dependencies(driving_widget thor_mang_driving_controller_generate_messages_cpp)
