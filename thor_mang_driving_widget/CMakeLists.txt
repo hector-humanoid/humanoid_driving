@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 ## Find catkin and any catkin packages on which
 ## this package depends at build time
-find_package(catkin REQUIRED COMPONENTS roscpp rospy roslib std_msgs)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy roslib std_msgs thor_mang_driving_controller)
 
 ## Declare things to be passed to other projects
 catkin_package(
@@ -50,7 +50,8 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR} s
 
 add_executable(driving_widget ${UIC_FILES} ${SOURCE_FILES})
 target_link_libraries(driving_widget ${catkin_LIBRARIES} ${QT_LIBRARIES})
-add_dependencies(driving_widget ${catkin_EXPORTED_TARGETS} driving_controller_generate_messages_cpp)
+add_dependencies(driving_widget ${catkin_EXPORTED_TARGETS})
+add_dependencies(driving_widget driving_controller_generate_messages_cpp)
 
 add_library(${PROJECT_NAME} ${UIC_FILES} ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${QT_LIBRARIES})
