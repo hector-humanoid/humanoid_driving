@@ -398,7 +398,7 @@ void DrivingWidget::sendHeadCommand() {
 
     trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(target_head_positions, head_joint_names_);
     if(head_move_to_default_)
-        trajectory_msg.time_from_start = 1.0;
+        trajectory_msg.points[0].time_from_start = ros::Duration(1.0);
 
     head_command_pub_.publish(trajectory_msg);
 }
