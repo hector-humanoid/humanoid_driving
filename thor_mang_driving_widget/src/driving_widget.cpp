@@ -368,7 +368,7 @@ void DrivingWidget::sendHeadCommand() {
     if ( head_move_to_default_ ) {
         bool reached_position = true;
         for ( int i = 0; i < target_head_positions.size(); i++ ) {
-            if ( std::abs(target_head_positions[i] - head_default_position_[i]) > 0.5 ) {
+            if ( std::abs(target_head_positions[i] - head_default_position_[i]) > 0.1 ) {
                 reached_position = false;
                 break;
             }
