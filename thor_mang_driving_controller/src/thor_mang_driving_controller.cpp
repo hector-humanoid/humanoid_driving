@@ -73,7 +73,7 @@ void DrivingController::checkReceivedMessages() {
             std_msgs::Float64 absolute_steering_angle_msg;
             absolute_steering_angle_msg.data = absolute_steering_angle_;
             absolute_steering_angle_pub_.publish(absolute_steering_angle_msg);
-            ROS_WARN("[DrivingController] OCS connection timed out. Going to All-Stop.");
+            ROS_WARN_THROTTLE(4.0, "[DrivingController] OCS connection timed out. Going to All-Stop.");
         }
     }
 }
