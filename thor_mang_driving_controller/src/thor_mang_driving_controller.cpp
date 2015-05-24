@@ -10,9 +10,11 @@ DrivingController::DrivingController() :
     initKeyFrames();
 
     last_command_received_.all_stop = true;
-    last_command_received_.absolute_steering_angle = 0.0;
+    last_command_received_.steering_angle_step = 0.0;
     last_command_received_.drive_forward = false;
     time_from_start_ = 5.0; // 5s for initial starting position
+
+    absolute_steering_angle_ = 0.0;
 
     received_robot_positions_ = false;
     received_first_command_msg_ = false;
@@ -32,6 +34,9 @@ DrivingController::DrivingController() :
 
     // all stop enabled on robot side
     all_stop_enabled_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingCommand>("driving_controller/all_stop", 1, true);
+
+    // publish absolute steering angle
+    absolute_steering_angle_pub_ = node_handle_.advertise<std_msgs::Float64>("driving_controller/absolute_steering_angle", 1, true);
 
     // steering command subscriber
     driving_command_sub_ = node_handle_.subscribe("driving_controller/driving_command", 1, &DrivingController::handleDrivingCommand, this);
@@ -64,6 +69,10 @@ void DrivingController::checkReceivedMessages() {
         // inform OCS of current state (once a second)
         if ( ros::Time::now() - last_auto_stop_info_sent_time_ >= ros::Duration(1.0) ) {
             all_stop_enabled_pub_.publish(last_command_received_);
+
+            std_msgs::Float64 absolute_steering_angle_msg;
+            absolute_steering_angle_msg.data = absolute_steering_angle_;
+            absolute_steering_angle_pub_.publish(absolute_steering_angle_msg);
             ROS_WARN("[DrivingController] OCS connection timed out. Going to All-Stop.");
         }
     }
@@ -86,7 +95,7 @@ void DrivingController::handleDrivingCommand(thor_mang_driving_controller::Drivi
         allStop();
     }
     else {
-        updateSteering(msg->absolute_steering_angle);
+        updateSteering(msg->steering_angle_step);
         updateDriveForward(msg->drive_forward);
     }
 
@@ -104,10 +113,14 @@ void DrivingController::handleControllerEnable(std_msgs::BoolConstPtr msg) {
 	ROS_INFO("[DrivingController] Controller disabled.");
 }
 
-void DrivingController::updateSteering(double target_angle) {
+void DrivingController::updateSteering(double angle_step) {
     if ( !controller_enabled_ ) {
         return;
     }
+
+    absolute_steering_angle_ += angle_step;
+
+    double target_angle = absolute_steering_angle_;
 
     // map to range [0,360]
     while ( target_angle >= 360.0 )  target_angle -= 360.0;
@@ -116,6 +129,10 @@ void DrivingController::updateSteering(double target_angle) {
     std::vector<double> interpolated_frame = getInterpolatedKeyFrame(target_angle, 360.0);
     trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(interpolated_frame, steering_joint_names_);
     steering_control_cmd_pub_.publish(trajectory_msg);
+
+    std_msgs::Float64 absolute_steering_angle_msg;
+    absolute_steering_angle_msg.data = absolute_steering_angle_;
+    absolute_steering_angle_pub_.publish(absolute_steering_angle_msg);
 }
 
 void DrivingController::initKeyFrames() {

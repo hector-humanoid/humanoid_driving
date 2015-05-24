@@ -63,6 +63,9 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     controller_enable_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/controller_enable", 1, true);
     controller_enable_ack_sub_ = node_handle_.subscribe("driving_controller/controller_enable_ack", 1, &DrivingWidget::handleControllerEnableACK, this);
 
+    // Get absolute steering angle from controller
+    absolute_steering_angle_sub_ = node_handle_.subscribe("driving_controller/absolute_steering_angle", 1, &DrivingWidget::handleNewAbsoluteSteeringAngle, this);
+
     // setup user interface
     connect(ui_->pushButton_ConfirmSteeringSensitivity, SIGNAL(clicked()), this, SLOT(SLO_SteeringSensitivityConfirmed()));
     connect(ui_->spinBox_SteeringSensitivity, SIGNAL(valueChanged(double)), this, SLOT(SLO_SteeringSensitivityChanged()));
@@ -197,6 +200,16 @@ void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
     ui_->label_CameraImage->setPixmap(pixmap);
 }
 
+void DrivingWidget::handleNewAbsoluteSteeringAngle(std_msgs::Float64ConstPtr msg) {
+    absolute_steering_angle_ = msg->data;
+
+    steering_angle_ = absolute_steering_angle_;
+    while ( steering_angle_ >= 360.0 )  steering_angle_ -= 360.0;
+    while ( steering_angle_ < 0 )       steering_angle_ += 360.0;
+
+    updateUI();
+}
+
 void DrivingWidget::SLO_SteeringSensitivityChanged() {
     ui_->pushButton_ConfirmSteeringSensitivity->setStyleSheet("color:#FF0000");
 }
@@ -298,11 +311,6 @@ void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
 void DrivingWidget::handleAllStopEnabled(thor_mang_driving_controller::DrivingCommandConstPtr msg) {
     all_stop_ = msg->all_stop;
     drive_forward_ = msg->drive_forward;
-    absolute_steering_angle_ = msg->absolute_steering_angle;
-
-    steering_angle_ = absolute_steering_angle_;
-    while ( steering_angle_ >= 360.0 )  steering_angle_ -= 360.0;
-    while ( steering_angle_ < 0 )       steering_angle_ += 360.0;
 
     updateUI();
 }
@@ -333,11 +341,11 @@ void DrivingWidget::sendDrivingCommand() {
     if ( controller_enabled_ == false )
         return;
 
-    calculateSteeringAngle();
+    checkSteeringLimits();
 
     thor_mang_driving_controller::DrivingCommand driving_command_msg;
     driving_command_msg.all_stop = all_stop_;
-    driving_command_msg.absolute_steering_angle = absolute_steering_angle_;
+    driving_command_msg.steering_angle_step = steering_speed_;
     driving_command_msg.drive_forward = drive_forward_;
     driving_command_pub_.publish(driving_command_msg);
 }
@@ -412,32 +420,20 @@ void DrivingWidget::handleSteeringCommand(double step) {
     steering_speed_ = steering_correction_ * steering_sensitivity_ * step;
 }
 
-void DrivingWidget::calculateSteeringAngle() {
+void DrivingWidget::checkSteeringLimits() {
     if ( !received_robot_state_ ) {
         ROS_ERROR_THROTTLE(2, "No robot positions received => No Update");
-        return;
+        steering_speed_ = 0.0;
     }
+
     if ( all_stop_ ) {
-        //ROS_INFO("All-Stop active! Steering blocked!");
-        return;
+        steering_speed_ = 0.0;
     }
+
     if (absolute_steering_angle_ + steering_speed_ <= -540.0 ||
         absolute_steering_angle_ + steering_speed_ >=  540.0 ) {
-        //ROS_INFO("Rotation blocked: No more than 1.5 turns left / right allowed");
-        return; // do not allow more than 3 turns total
+        steering_speed_ = 0.0;
     }
-
-    absolute_steering_angle_ += steering_speed_;
-
-    // publish current absolute angle for visualization
-
-    steering_angle_ += steering_speed_;
-    if ( steering_angle_ < 0.0 )
-        steering_angle_ += 360.0;
-    else if ( steering_angle_ >= 360.0)
-        steering_angle_ -= 360.0;
-
-    updateUI();
 }
 
 trajectory_msgs::JointTrajectory DrivingWidget::generateTrajectoryMsg(std::vector<double> &joint_angles, std::vector<std::string> joint_names) {

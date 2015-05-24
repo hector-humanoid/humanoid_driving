@@ -25,7 +25,7 @@ public:
   void handleNewTimeFromStart(std_msgs::Float64ConstPtr msg);
   void handleControllerEnable(std_msgs::BoolConstPtr msg);
 
-  void updateSteering(double target_angle);
+  void updateSteering(double angle_step);
   void updateDriveForward(bool drive);
 
   void allStop();
@@ -54,6 +54,7 @@ private:
   ros::Publisher speed_control_cmd_pub_;
   ros::Publisher all_stop_enabled_pub_;
   ros::Publisher controller_enable_ack_pub_;
+  ros::Publisher absolute_steering_angle_pub_;
 
   // steering command stuff
   thor_mang_driving_controller::DrivingCommand last_command_received_;
@@ -83,6 +84,9 @@ private:
   ros::Time last_auto_stop_info_sent_time_;
 
   bool controller_enabled_;
+
+  // accumulate absolute steering angle
+  double absolute_steering_angle_;
 };
 
 

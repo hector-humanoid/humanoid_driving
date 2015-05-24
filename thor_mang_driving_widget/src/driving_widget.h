@@ -50,6 +50,7 @@ public:
     void handleAllStopEnabled(thor_mang_driving_controller::DrivingCommandConstPtr msg);
 
     void handleControllerEnableACK(std_msgs::BoolConstPtr msg);
+    void handleNewAbsoluteSteeringAngle(std_msgs::Float64ConstPtr msg);
 
 protected:
     void timerEvent(QTimerEvent *event) override;
@@ -69,7 +70,7 @@ public slots:
 private:
     void sendDrivingCommand();
     void sendHeadCommand();
-    void calculateSteeringAngle();
+    void checkSteeringLimits();
 
     void updateUI(bool update_steering_sensitivity = false, bool update_head_sensitivity = false);
     void drawWheelVisualization();
@@ -111,6 +112,9 @@ private:
     // Enable / Disable controller
     ros::Publisher controller_enable_pub_;
     ros::Subscriber controller_enable_ack_sub_;
+
+    // Get absolute steering angle from robot
+    ros::Subscriber absolute_steering_angle_sub_;
 
     // Steering parameters
     double steering_sensitivity_;
