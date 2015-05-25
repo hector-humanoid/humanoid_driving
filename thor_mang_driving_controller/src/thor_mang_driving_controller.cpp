@@ -62,7 +62,7 @@ void DrivingController::checkReceivedMessages() {
     }
 
     ros::Duration time_since_last_msg = ros::Time::now() - last_command_received_time_;
-    if ( time_since_last_msg >= ros::Duration(1.0)) { // OCS not alive? Go to "all stop"	
+    if ( time_since_last_msg >= ros::Duration(0.5)) { // OCS not alive? Go to "all stop"
         last_command_received_.all_stop = true;
         allStop();
 
@@ -95,7 +95,7 @@ void DrivingController::handleDrivingCommand(thor_mang_driving_controller::Drivi
         allStop();
     }
     else {
-        updateSteering(msg->steering_angle_step);
+        updateSteering();
         updateDriveForward(msg->drive_forward);
     }
 
@@ -113,14 +113,21 @@ void DrivingController::handleControllerEnable(std_msgs::BoolConstPtr msg) {
 	ROS_INFO("[DrivingController] Controller disabled.");
 }
 
-void DrivingController::updateSteering(double angle_step) {
-    if ( !controller_enabled_ ) {
+void DrivingController::updateSteering() {
+    if ( !controller_enabled_ && !last_command_received_.all_stop) {
         return;
     }
 
-    absolute_steering_angle_ += angle_step;
+    ros::Duration diff = ros::Time::now() - last_steering_update_;
+    double current_step = diff.toSec() * last_command_received_.steering_angle_step;
 
-    double target_angle = absolute_steering_angle_;
+    absolute_steering_angle_ += current_step;
+    if ( absolute_steering_angle_ >= 538.0 )
+      absolute_steering_angle_ = 538.0;
+    else if ( absolute_steering_angle_ <= -538.0 )
+      absolute_steering_angle_ = -538.0;
+
+    double target_angle = absolute_steering_angle_;    
 
     // map to range [0,360]
     while ( target_angle >= 360.0 )  target_angle -= 360.0;

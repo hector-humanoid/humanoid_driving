@@ -25,7 +25,7 @@ public:
   void handleNewTimeFromStart(std_msgs::Float64ConstPtr msg);
   void handleControllerEnable(std_msgs::BoolConstPtr msg);
 
-  void updateSteering(double angle_step);
+  void updateSteering();
   void updateDriveForward(bool drive);
 
   void allStop();
@@ -87,6 +87,8 @@ private:
 
   // accumulate absolute steering angle
   double absolute_steering_angle_;
+
+  ros::Time last_steering_update_;
 };
 
 
