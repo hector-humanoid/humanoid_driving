@@ -9,9 +9,9 @@ from sensor_msgs.msg import JointState
 
 import yaml
 
-joint_state_topic = '/thor_mang/joint_states'
+joint_state_topic = '/atlas/joint_states'
 
-leg_joints = ['r_hip_yaw', 'r_hip_roll', 'r_hip_pitch', 'r_knee', 'r_ankle_pitch', 'r_ankle_roll']
+leg_joints = ['l_leg_hpz', 'l_leg_hpx', 'l_leg_hpy', 'l_leg_kny', 'l_leg_aky', 'l_leg_akx']
 used_joints = [leg_joints[2], leg_joints[3], leg_joints[4]]  # hip pitch, knee, ankle pitch
 leg_position_types = ['stop_position', 'forward_position', 'safety_position']
 

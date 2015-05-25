@@ -46,7 +46,7 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
 
     // Get current robot state
     std::string joint_state_topic;
-    node_handle_private_.param("joint_state_topic", joint_state_topic, std::string("/thor_mang/joint_states"));
+    node_handle_private_.param("/driving_controller/joint_state_topic", joint_state_topic, std::string("/thor_mang/joint_states"));
     robot_state_sub_ = node_handle_.subscribe(joint_state_topic, 1, &DrivingWidget::handleNewJointStateEvent, this);
     received_robot_state_ = false;
 
@@ -378,21 +378,21 @@ void DrivingWidget::sendHeadCommand() {
         head_move_to_default_ = !reached_position;
     }
     else {
-        if ( head_joint_names_.size() >= 1 ) {
-            if ( head_joint_names_[0].find("pan") != std::string::npos )
-                target_head_positions[0] += head_pan_speed_;
+//        if ( head_joint_names_.size() >= 1 ) {
+//            if ( head_joint_names_[0].find("pan") != std::string::npos )
+//                target_head_positions[0] += head_pan_speed_;
 
-            if ( head_joint_names_[0].find("tilt") != std::string::npos )
-                target_head_positions[0] += head_tilt_speed_;
-        }
+//            if ( head_joint_names_[0].find("tilt") != std::string::npos )
+                target_head_positions[0] -= head_tilt_speed_;   //Inverted view mode
+//        }
 
-        if ( head_joint_names_.size() >= 1 ) {
-            if ( head_joint_names_[1].find("pan") != std::string::npos )
-                target_head_positions[1] += head_pan_speed_;
+//        if ( head_joint_names_.size() >= 1 ) {
+//            if ( head_joint_names_[1].find("pan") != std::string::npos )
+//                target_head_positions[1] += head_pan_speed_;
 
-            if ( head_joint_names_[1].find("tilt") != std::string::npos )
-                target_head_positions[1] += head_tilt_speed_;
-        }
+//            if ( head_joint_names_[1].find("tilt") != std::string::npos )
+//                target_head_positions[1] += head_tilt_speed_;
+//        }
     }
 
 

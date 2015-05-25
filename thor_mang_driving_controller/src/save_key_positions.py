@@ -9,10 +9,9 @@ from sensor_msgs.msg import JointState
 
 import yaml
 
-joint_state_topic = '/thor_mang/joint_states'
+joint_state_topic = '/atlas/joint_states'
 
-joints = ['l_shoulder_pitch', 'l_shoulder_roll', 'l_shoulder_yaw', 'l_elbow', 'l_wrist_yaw1', 'l_wrist_roll',
-          'l_wrist_yaw2']
+joints = ['l_arm_shz', 'l_arm_shx', 'l_arm_ely', 'l_arm_elx', 'l_arm_wry', 'l_arm_wrx', 'l_arm_wry2']
 
 
 class KeyPositionSaver():
