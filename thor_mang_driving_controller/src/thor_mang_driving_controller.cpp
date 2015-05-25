@@ -65,7 +65,7 @@ void DrivingController::checkReceivedMessages() {
     if ( time_since_last_msg >= ros::Duration(0.5)) { // OCS not alive? Go to "all stop"
         last_command_received_.all_stop = true;
         allStop();
-
+	ROS_WARN("Going to ALL_STOP: TIMEOUT");
         // inform OCS of current state (once a second)
         if ( ros::Time::now() - last_auto_stop_info_sent_time_ >= ros::Duration(1.0) ) {
             all_stop_enabled_pub_.publish(last_command_received_);
@@ -118,9 +118,13 @@ void DrivingController::updateSteering() {
         return;
     }
 
-    ros::Duration diff = ros::Time::now() - last_steering_update_;
-    double current_step = diff.toSec() * last_command_received_.steering_angle_step;
+  //  ros::Duration diff = ros::Time::now() - last_steering_update_;
+//    double current_step = diff.toSec() * last_command_received_.steering_angle_step;
+ double current_step = last_command_received_.steering_angle_step;
 
+//	ROS_INFO("diff: %f",  diff.toSec());
+	ROS_INFO("current_Step: %f", current_step);
+	ROS_INFO("steering_angle: %f", absolute_steering_angle_); 
     absolute_steering_angle_ += current_step;
     if ( absolute_steering_angle_ >= 538.0 )
       absolute_steering_angle_ = 538.0;
