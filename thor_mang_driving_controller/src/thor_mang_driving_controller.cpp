@@ -74,7 +74,7 @@ void DrivingController::checkReceivedMessages() {
     }
 
     ros::Duration time_since_last_msg = ros::Time::now() - last_command_received_time_;
-    if ( time_since_last_msg >= ros::Duration(0.5)) { // OCS not alive? Go to "all stop"
+    if ( time_since_last_msg >= ros::Duration(1.0)) { // OCS not alive? Go to "all stop"
         last_command_received_.all_stop = true;
         allStop();
 
