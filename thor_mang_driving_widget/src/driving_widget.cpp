@@ -194,7 +194,7 @@ void DrivingWidget::setGUIEnabled(bool enable) {
     ui_->pushButton_AllStop->setEnabled(enable);
     ui_->pushButton_ConfirmHeadSensitivity->setEnabled(enable);
     ui_->pushButton_ConfirmSteeringSensitivity->setEnabled(enable);
-    ui_->pushButton_ShowCameraImage->setEnabled(enable);
+    //ui_->pushButton_ShowCameraImage->setEnabled(enable);
     ui_->pushButton_Reset->setEnabled(enable);
     ui_->pushButton_OverrideLimits->setEnabled(enable);
     ui_->spinBox_HeadSensitivity->setEnabled(enable);
@@ -205,6 +205,18 @@ void DrivingWidget::setGUIEnabled(bool enable) {
 
 void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
     QImage img(&(msg->data[0]), msg->width, msg->height, QImage::Format_RGB888);
+
+    // Draw all stop sign in img
+    if ( all_stop_ ) {
+        QPainter painter(&img); // sorry i forgot the "&"
+
+        painter.fillRect(70, 70, img.width()-140, img.height()-140, Qt::red);
+
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Arial", 48));
+        painter.drawText(img.rect(), Qt::AlignCenter, "All Stop!");
+    }
+
     QPixmap pixmap = QPixmap::fromImage(img.scaled( ui_->label_CameraImage->width()-8, ui_->label_CameraImage->height()-8, Qt::KeepAspectRatio));
     ui_->label_CameraImage->setPixmap(pixmap);
 }
