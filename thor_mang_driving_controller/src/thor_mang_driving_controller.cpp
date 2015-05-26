@@ -108,7 +108,7 @@ void DrivingController::handleDrivingCommand(thor_mang_driving_controller::Drivi
         allStop();
     }
     else {
-        updateSteering();
+        //updateSteering();
         updateHeadPosition();
         updateDriveForward(msg->drive_forward);
     }

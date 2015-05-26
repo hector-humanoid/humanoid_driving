@@ -14,12 +14,9 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
 
     // steering parameters
     steering_sensitivity_ = 2.5;
-    steering_correction_ = -1.0;
     head_sensitivity_ = 0.1;
-    head_tilt_correction_ = -1.0;
-    head_pan_correction_ = 1.0;
     allow_head_sensitivity_change_ = false;
-    allow_steering_sensitivity_change_ = true;
+    allow_steering_sensitivity_change_ = false;
     ignore_steering_limits_ = false;
 
     // Driving control elements
@@ -52,6 +49,15 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     node_handle_private_.param("joypad_button_head_sensitivity_plus", joypad_ids_[BUTTON_HEAD_SENSITIVITY_PLUS], 5);
     node_handle_private_.param("joypad_button_head_sensitivity_minus", joypad_ids_[BUTTON_HEAD_SENSITIVITY_MINUS], 4);
     node_handle_private_.param("joypad_button_mode_to_default", joypad_ids_[BUTTON_HEAD_MODE_TO_DEFAULT], 11);
+
+    node_handle_private_.param("steering_correction_factor", steering_correction_, -1.0);
+    node_handle_private_.param("head_tilt_correction_factor", head_tilt_correction_, -1.0);
+    node_handle_private_.param("head_pan_correction_factor", head_pan_correction_, 1.0);
+
+    if ( joypad_ids_[BUTTON_STEERING_SENSITIVITY_PLUS] < 0 || joypad_ids_[BUTTON_STEERING_SENSITIVITY_PLUS] < 0 )
+        allow_steering_sensitivity_change_ = false;
+    if ( joypad_ids_[BUTTON_HEAD_SENSITIVITY_PLUS] < 0 || joypad_ids_[BUTTON_HEAD_SENSITIVITY_PLUS] < 0 )
+        allow_head_sensitivity_change_ = false;
 
     // Setup driving commands
     all_stop_enabled_sub_ = node_handle_.subscribe("driving_controller/all_stop", 1, &DrivingWidget::handleAllStopEnabled, this);
