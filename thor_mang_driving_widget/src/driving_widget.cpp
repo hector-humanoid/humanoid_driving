@@ -301,6 +301,7 @@ void DrivingWidget::SLO_ToggleDrivingMode() {
 
 
 void DrivingWidget::SLO_Reset() {
+    absolute_target_steering_angle_ = current_absolute_steering_angle_;
     controller_reset_pub_.publish(std_msgs::Empty());
 }
 
@@ -394,8 +395,8 @@ void DrivingWidget::sendDrivingCommand() {
     absolute_target_steering_angle_ += steering_speed_;
     double actual_steering_speed = 0.0;
     double speed_factor = std::min(1.0, 0.2*fabs(absolute_target_steering_angle_ - current_absolute_steering_angle_));
-    ROS_INFO("speed_factor = %f", speed_factor);
-    ROS_INFO("diff = %f", fabs(absolute_target_steering_angle_ - current_absolute_steering_angle_));
+    //ROS_INFO("speed_factor = %f", speed_factor);
+    //ROS_INFO("diff = %f", fabs(absolute_target_steering_angle_ - current_absolute_steering_angle_));
     if ( absolute_target_steering_angle_ - current_absolute_steering_angle_ > 0.05 ) {
         actual_steering_speed = steering_sensitivity_*speed_factor;
     }
