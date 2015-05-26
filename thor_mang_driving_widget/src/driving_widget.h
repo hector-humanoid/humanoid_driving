@@ -126,7 +126,7 @@ private:
     // Driving control elements
     bool all_stop_;
     double current_steering_angle_;
-    double absolute_steering_angle_;
+    double current_absolute_steering_angle_;
     double absolute_target_steering_angle_;
     bool drive_forward_;
     double time_from_start_;

@@ -140,7 +140,7 @@ color:white;</string>
      </layout>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,1,0,2,0,0">
+     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,1,0,3,0,0">
       <item>
        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1,0">
         <item>
