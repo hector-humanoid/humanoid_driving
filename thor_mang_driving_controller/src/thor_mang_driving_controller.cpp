@@ -263,6 +263,8 @@ void DrivingController::allStop() {
     trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(all_stop_leg_position, leg_joint_names_);
     speed_control_cmd_pub_.publish(trajectory_msg);
 
+    last_command_received_.drive_forward = false;
+
     // stop steering
     std::vector<double> current_steering_position = getRobotJointPositions(steering_joint_names_);
     trajectory_msg = generateTrajectoryMsg(current_steering_position, steering_joint_names_);
