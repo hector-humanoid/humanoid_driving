@@ -24,6 +24,7 @@ DrivingController::DrivingController() :
     controller_enabled_ = false;
 
     // Head control elements
+    move_head_to_default_ = false;
     private_node_handle_.getParam("head_joint_names", head_joint_names_);
     private_node_handle_.getParam("head_default_position", head_default_position_);
 
@@ -49,6 +50,7 @@ DrivingController::DrivingController() :
 
     // steering command subscriber
     driving_command_sub_ = node_handle_.subscribe("driving_controller/driving_command", 1, &DrivingController::handleDrivingCommand, this);
+    move_head_to_default_sub_ = node_handle_.subscribe("driving_controller/move_head_to_default", 1, &DrivingController::handleMoveHeadToDefault, this);
 
     // robot state subscriber
     std::string joint_state_topic;
@@ -129,7 +131,12 @@ void DrivingController::handleControllerReset(std_msgs::EmptyConstPtr msg) {
     last_command_received_.steering_angle_step = 0.0;
     last_command_received_.drive_forward = false;
 
-    absolute_steering_angle_ = 0.0;
+    while ( absolute_steering_angle_ >= 360.0 )  absolute_steering_angle_ -= 360.0;
+    while ( absolute_steering_angle_ < 0 ) absolute_steering_angle_ += 360.0;
+}
+
+void DrivingController::handleMoveHeadToDefault(std_msgs::EmptyConstPtr msg) {
+    move_head_to_default_ = true;
 }
 
 void DrivingController::updateHeadPosition() {
@@ -149,7 +156,7 @@ void DrivingController::updateHeadPosition() {
         }
     }
 
-    if ( last_command_received_.head_move_to_default ) {
+    if ( move_head_to_default_ ) {
         bool reached_position = true;
         for ( int i = 0; i < target_head_positions.size(); i++ ) {
             if ( std::abs(target_head_positions[i] - head_default_position_[i]) > 0.1 ) {
@@ -159,7 +166,7 @@ void DrivingController::updateHeadPosition() {
         }
 
         target_head_positions = head_default_position_;
-        last_command_received_.head_move_to_default = !reached_position;
+        move_head_to_default_ = !reached_position;
     }
     else {
         if ( head_joint_names_.size() >= 1 ) {
@@ -180,7 +187,7 @@ void DrivingController::updateHeadPosition() {
     }
 
     trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(target_head_positions, head_joint_names_);
-    if(last_command_received_.head_move_to_default)
+    if(move_head_to_default_)
         trajectory_msg.points[0].time_from_start = ros::Duration(1.0);
 
     head_cmd_pub_.publish(trajectory_msg);

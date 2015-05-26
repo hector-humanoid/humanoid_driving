@@ -31,7 +31,6 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     controller_enabled_ = false;
     head_pan_speed_ = 0.0;
     head_tilt_speed_ = 0.0;
-    head_move_to_default_ = false;
 
     setGUIEnabled(false);
 
@@ -57,6 +56,7 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     // Setup driving commands
     all_stop_enabled_sub_ = node_handle_.subscribe("driving_controller/all_stop", 1, &DrivingWidget::handleAllStopEnabled, this);
     driving_command_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingCommand>("driving_controller/driving_command", 1, false);
+    head_move_to_default_pub_ = node_handle_.advertise<std_msgs::Empty>("driving_controller/move_head_to_default", 1, false);
 
     // Enable / Disable controller, Reset
     controller_enable_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/controller_enable", 1, true);
@@ -189,6 +189,8 @@ void DrivingWidget::setGUIEnabled(bool enable) {
     ui_->pushButton_ConfirmHeadSensitivity->setEnabled(enable);
     ui_->pushButton_ConfirmSteeringSensitivity->setEnabled(enable);
     ui_->pushButton_ShowCameraImage->setEnabled(enable);
+    ui_->pushButton_Reset->setEnabled(enable);
+    ui_->pushButton_OverrideLimits->setEnabled(enable);
     ui_->spinBox_HeadSensitivity->setEnabled(enable);
     ui_->spinBox_SteeringSensitivity->setEnabled(enable);
     ui_->lineEdit_SteeringAngle->setEnabled(enable);
@@ -303,7 +305,7 @@ void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
     }
 
     if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_HEAD_MODE_TO_DEFAULT]] ) {
-        head_move_to_default_ = true;
+        head_move_to_default_pub_.publish(std_msgs::Empty());
     }
 
     // don't allow negative sensitivities
@@ -348,7 +350,6 @@ void DrivingWidget::sendDrivingCommand() {
     driving_command_msg.drive_forward = drive_forward_;
     driving_command_msg.head_tilt_speed = head_tilt_speed_;
     driving_command_msg.head_pan_speed = head_pan_speed_;
-    driving_command_msg.head_move_to_default = head_move_to_default_;
     driving_command_msg.ignore_steering_limits = ignore_steering_limits_;
     driving_command_pub_.publish(driving_command_msg);
 }

@@ -104,6 +104,7 @@ private:
 
     // Steering Publishers
     ros::Publisher driving_command_pub_;
+    ros::Publisher head_move_to_default_pub_;
 
     // Enable / Disable controller, Reset
     ros::Publisher controller_enable_pub_;
@@ -132,7 +133,6 @@ private:
     // Head control elements
     double head_tilt_speed_;
     double head_pan_speed_;
-    bool head_move_to_default_;
 
     // allow sensitivity changes
     bool allow_head_sensitivity_change_;

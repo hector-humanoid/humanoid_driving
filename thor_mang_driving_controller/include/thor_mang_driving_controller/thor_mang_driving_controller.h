@@ -25,6 +25,7 @@ public:
   void handleNewTimeFromStart(std_msgs::Float64ConstPtr msg);
   void handleControllerEnable(std_msgs::BoolConstPtr msg);
   void handleControllerReset(std_msgs::EmptyConstPtr msg);
+  void handleMoveHeadToDefault(std_msgs::EmptyConstPtr msg);
 
   void updateSteering();
   void updateHeadPosition();
@@ -51,6 +52,7 @@ private:
   ros::Subscriber driving_command_sub_;
   ros::Subscriber controller_enable_sub_;
   ros::Subscriber controller_reset_sub_;
+  ros::Subscriber move_head_to_default_sub_;
 
   // Publisher for controller commands
   ros::Publisher steering_control_cmd_pub_;
@@ -97,6 +99,7 @@ private:
   // Head control elements
   std::vector<std::string> head_joint_names_;
   std::vector<double> head_default_position_;
+  bool move_head_to_default_;
 };
 
 
