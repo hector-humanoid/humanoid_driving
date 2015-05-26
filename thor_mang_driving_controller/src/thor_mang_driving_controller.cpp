@@ -92,7 +92,7 @@ void DrivingController::handleDrivingCommand(thor_mang_driving_controller::Drivi
 
     // first message received => go to default behaviour
     received_first_command_msg_ = true;
-    time_from_start_ = 0.1;
+    time_from_start_ = 0.5;
 }
 
 void DrivingController::handleControllerEnable(std_msgs::BoolConstPtr msg) {
