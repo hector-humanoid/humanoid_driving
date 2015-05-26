@@ -23,6 +23,15 @@ DrivingController::DrivingController() :
 
     controller_enabled_ = false;
 
+    // Head control elements
+    private_node_handle_.getParam("head_joint_names", head_joint_names_);
+    private_node_handle_.getParam("head_default_position", head_default_position_);
+
+    // Setup head control publisher
+    std::string head_controller_topic;
+    private_node_handle_.param("head_controller_topic", head_controller_topic, std::string("/thor_mang/head_traj_controller/command"));
+    head_cmd_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(head_controller_topic, 1, false);
+
     // steering publisher
     std::string steering_controller_topic;
     private_node_handle_.param("steering_controller_topic", steering_controller_topic, std::string("/thor_mang/left_arm_traj_controller/command"));
@@ -33,7 +42,7 @@ DrivingController::DrivingController() :
     speed_control_cmd_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(speed_controller_topic, 1, false);
 
     // all stop enabled on robot side
-    all_stop_enabled_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingCommand>("driving_controller/all_stop", 1, true);
+    all_stop_enabled_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingCommand>("driving_controller/all_stop", 1, false);
 
     // publish absolute steering angle
     absolute_steering_angle_pub_ = node_handle_.advertise<std_msgs::Float64>("driving_controller/absolute_steering_angle", 1, true);
@@ -49,6 +58,7 @@ DrivingController::DrivingController() :
     // shutdown subscriber
     controller_enable_sub_ = node_handle_.subscribe("driving_controller/controller_enable", 1, &DrivingController::handleControllerEnable, this);
     controller_enable_ack_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/controller_enable_ack", 1, false);
+    controller_reset_sub_ = node_handle_.subscribe("driving_controller/controller_reset", 1, &DrivingController::handleControllerReset, this);
 
 }
 
@@ -65,7 +75,7 @@ void DrivingController::checkReceivedMessages() {
     if ( time_since_last_msg >= ros::Duration(0.5)) { // OCS not alive? Go to "all stop"
         last_command_received_.all_stop = true;
         allStop();
-	ROS_WARN("Going to ALL_STOP: TIMEOUT");
+
         // inform OCS of current state (once a second)
         if ( ros::Time::now() - last_auto_stop_info_sent_time_ >= ros::Duration(1.0) ) {
             all_stop_enabled_pub_.publish(last_command_received_);
@@ -73,7 +83,8 @@ void DrivingController::checkReceivedMessages() {
             std_msgs::Float64 absolute_steering_angle_msg;
             absolute_steering_angle_msg.data = absolute_steering_angle_;
             absolute_steering_angle_pub_.publish(absolute_steering_angle_msg);
-            ROS_WARN_THROTTLE(4.0, "[DrivingController] OCS connection timed out. Going to All-Stop.");
+            ROS_WARN("[DrivingController] OCS connection timed out. Going to All-Stop.");
+            last_auto_stop_info_sent_time_ = ros::Time::now();
         }
     }
 }
@@ -96,6 +107,7 @@ void DrivingController::handleDrivingCommand(thor_mang_driving_controller::Drivi
     }
     else {
         updateSteering();
+        updateHeadPosition();
         updateDriveForward(msg->drive_forward);
     }
 
@@ -110,25 +122,84 @@ void DrivingController::handleControllerEnable(std_msgs::BoolConstPtr msg) {
     if ( controller_enabled_ )
         ROS_INFO("[DrivingController] Controller enabled.");
     else
-	ROS_INFO("[DrivingController] Controller disabled.");
+        ROS_INFO("[DrivingController] Controller disabled.");
 }
 
-void DrivingController::updateSteering() {
-    if ( !controller_enabled_ && !last_command_received_.all_stop) {
+void DrivingController::handleControllerReset(std_msgs::EmptyConstPtr msg) {
+    last_command_received_.steering_angle_step = 0.0;
+    last_command_received_.drive_forward = false;
+
+    absolute_steering_angle_ = 0.0;
+}
+
+void DrivingController::updateHeadPosition() {
+    if ( !controller_enabled_ || last_command_received_.all_stop) {
         return;
     }
 
-  //  ros::Duration diff = ros::Time::now() - last_steering_update_;
-//    double current_step = diff.toSec() * last_command_received_.steering_angle_step;
- double current_step = last_command_received_.steering_angle_step;
+    // get current angles and add control offset
+    std::vector<double> target_head_positions( head_joint_names_.size() );
 
-//	ROS_INFO("diff: %f",  diff.toSec());
-	ROS_INFO("current_Step: %f", current_step);
-	ROS_INFO("steering_angle: %f", absolute_steering_angle_); 
+    for ( int i = 0; i < head_joint_names_.size(); i++ ) {
+        for ( int j = 0; j < robot_joint_names_.size(); j++ ) {
+            if ( head_joint_names_[i] == robot_joint_names_[j] ) {
+                target_head_positions[i] = robot_joint_positions_[j];
+                break;
+            }
+        }
+    }
+
+    if ( last_command_received_.head_move_to_default ) {
+        bool reached_position = true;
+        for ( int i = 0; i < target_head_positions.size(); i++ ) {
+            if ( std::abs(target_head_positions[i] - head_default_position_[i]) > 0.1 ) {
+                reached_position = false;
+                break;
+            }
+        }
+
+        target_head_positions = head_default_position_;
+        last_command_received_.head_move_to_default = !reached_position;
+    }
+    else {
+        if ( head_joint_names_.size() >= 1 ) {
+            if ( head_joint_names_[0].find("pan") != std::string::npos )
+                target_head_positions[0] += last_command_received_.head_pan_speed;
+
+            if ( head_joint_names_[0].find("tilt") != std::string::npos )
+                target_head_positions[0] += last_command_received_.head_tilt_speed;
+        }
+
+        if ( head_joint_names_.size() >= 1 ) {
+            if ( head_joint_names_[1].find("pan") != std::string::npos )
+                target_head_positions[1] += last_command_received_.head_pan_speed;
+
+            if ( head_joint_names_[1].find("tilt") != std::string::npos )
+                target_head_positions[1] += last_command_received_.head_tilt_speed;
+        }
+    }
+
+    trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(target_head_positions, head_joint_names_);
+    if(last_command_received_.head_move_to_default)
+        trajectory_msg.points[0].time_from_start = ros::Duration(1.0);
+
+    head_cmd_pub_.publish(trajectory_msg);
+}
+
+
+void DrivingController::updateSteering() {
+    if ( !controller_enabled_ || last_command_received_.all_stop) {
+        return;
+    }
+
+    //  ros::Duration diff = ros::Time::now() - last_steering_update_;
+    //  double current_step = diff.toSec() * last_command_received_.steering_angle_step;
+    double current_step = last_command_received_.steering_angle_step;
+
     absolute_steering_angle_ += current_step;
-    if ( absolute_steering_angle_ >= 538.0 )
+    if ( last_command_received_.ignore_steering_limits == false && absolute_steering_angle_ >= 538.0 )
       absolute_steering_angle_ = 538.0;
-    else if ( absolute_steering_angle_ <= -538.0 )
+    else if ( last_command_received_.ignore_steering_limits == false && absolute_steering_angle_ <= -538.0 )
       absolute_steering_angle_ = -538.0;
 
     double target_angle = absolute_steering_angle_;    

@@ -41,6 +41,7 @@ int main(int argc, char** argv)
       ros::spinOnce();
       driving_controller.checkReceivedMessages();
       driving_controller.updateSteering();
+      driving_controller.updateHeadPosition();
       rate.sleep();
   }
 }

@@ -24,8 +24,10 @@ public:
   void handleNewJointStateEvent(sensor_msgs::JointStateConstPtr msg);
   void handleNewTimeFromStart(std_msgs::Float64ConstPtr msg);
   void handleControllerEnable(std_msgs::BoolConstPtr msg);
+  void handleControllerReset(std_msgs::EmptyConstPtr msg);
 
   void updateSteering();
+  void updateHeadPosition();
   void updateDriveForward(bool drive);
 
   void allStop();
@@ -48,10 +50,12 @@ private:
   ros::Subscriber joint_state_sub_;
   ros::Subscriber driving_command_sub_;
   ros::Subscriber controller_enable_sub_;
+  ros::Subscriber controller_reset_sub_;
 
   // Publisher for controller commands
   ros::Publisher steering_control_cmd_pub_;
   ros::Publisher speed_control_cmd_pub_;
+  ros::Publisher head_cmd_pub_;
   ros::Publisher all_stop_enabled_pub_;
   ros::Publisher controller_enable_ack_pub_;
   ros::Publisher absolute_steering_angle_pub_;
@@ -89,6 +93,10 @@ private:
   double absolute_steering_angle_;
 
   ros::Time last_steering_update_;
+
+  // Head control elements
+  std::vector<std::string> head_joint_names_;
+  std::vector<double> head_default_position_;
 };
 
 
