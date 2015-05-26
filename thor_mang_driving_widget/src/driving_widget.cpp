@@ -187,6 +187,28 @@ void DrivingWidget::drawWheelVisualization() {
     wheel = wheel_scene_.addRect(-wheel_width/2.0, -wheel_length/2.0, wheel_width, wheel_length, QPen(), QBrush(wheel_color, Qt::SolidPattern));
     wheel->setTransform(steering_transform*position_transform, true);
 
+    // show all stop
+    // Draw all stop sign in img
+    if ( all_stop_ ) {
+        /*
+        QPainter painter(&img); // sorry i forgot the "&"
+
+        painter.fillRect(70, 70, img.width()-140, img.height()-140, Qt::red);
+
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Arial", 48));
+        painter.drawText(img.rect(), Qt::AlignCenter, "All Stop!");*/
+
+        QGraphicsRectItem *background_item = wheel_scene_.addRect(-car_width/2.0+0.3, 0.0-car_length/12.0, car_width-0.6, car_length/6.0, QPen(Qt::red), QBrush(Qt::red));
+
+        QFont textFont;
+        textFont.setBold(true);
+        textFont.setPixelSize(background_item->boundingRect().height()-0.5);
+        QGraphicsTextItem *allStopTextItem = wheel_scene_.addText("Stop!", textFont);
+        allStopTextItem->setDefaultTextColor(Qt::white);
+        allStopTextItem->moveBy( -allStopTextItem->boundingRect().width()/2.0, -allStopTextItem->boundingRect().height()/2.0);
+    }
+
     ui_->graphicsView_Wheels->centerOn(0.0, 0.0);
 }
 
@@ -205,18 +227,6 @@ void DrivingWidget::setGUIEnabled(bool enable) {
 
 void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
     QImage img(&(msg->data[0]), msg->width, msg->height, QImage::Format_RGB888);
-
-    // Draw all stop sign in img
-    if ( all_stop_ ) {
-        QPainter painter(&img); // sorry i forgot the "&"
-
-        painter.fillRect(70, 70, img.width()-140, img.height()-140, Qt::red);
-
-        painter.setPen(Qt::white);
-        painter.setFont(QFont("Arial", 48));
-        painter.drawText(img.rect(), Qt::AlignCenter, "All Stop!");
-    }
-
     QPixmap pixmap = QPixmap::fromImage(img.scaled( ui_->label_CameraImage->width()-8, ui_->label_CameraImage->height()-8, Qt::KeepAspectRatio));
     ui_->label_CameraImage->setPixmap(pixmap);
 }
