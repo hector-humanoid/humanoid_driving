@@ -23,20 +23,18 @@ class DrivingWidget : public QMainWindow
 {
     Q_OBJECT
 
-    enum AxisIDs {
-      STEERING=0,
-      HEAD_PAN=2,
-      HEAD_TILT=3
-    };
-
-    enum ButtonIDs {
-      FORWARD=1,
-      ALL_STOP=2,
-      STEERING_SENSITIVITY_PLUS=7,
-      STEERING_SENSITIVITY_MINUS=6,
-      HEAD_SENSITIVITY_PLUS=5,
-      HEAD_SENSITIVITY_MINUS=4,
-      HEAD_MODE_TO_DEFAULT=11
+    enum JoypadIDs {
+      AXIS_STEERING=0,
+      AXIS_HEAD_PAN,
+      AXIS_HEAD_TILT,
+      BUTTON_FORWARD,
+      BUTTON_ALL_STOP,
+      BUTTON_STEERING_SENSITIVITY_PLUS,
+      BUTTON_STEERING_SENSITIVITY_MINUS,
+      BUTTON_HEAD_SENSITIVITY_PLUS,
+      BUTTON_HEAD_SENSITIVITY_MINUS,
+      BUTTON_HEAD_MODE_TO_DEFAULT,
+      NUM_JOYPAD_IDS
     };
 
 public:
@@ -50,6 +48,7 @@ public:
     void handleAllStopEnabled(thor_mang_driving_controller::DrivingCommandConstPtr msg);
 
     void handleControllerEnableACK(std_msgs::BoolConstPtr msg);
+    void handleNewAbsoluteSteeringAngle(std_msgs::Float64ConstPtr msg);
 
 protected:
     void timerEvent(QTimerEvent *event) override;
@@ -66,10 +65,13 @@ public slots:
     void SLO_AllStopButtonChecked(bool active);
     void SLO_ToggleDrivingMode();
 
+    void SLO_Reset();
+    void SLO_OverrideLimits();
+
 private:
     void sendDrivingCommand();
     void sendHeadCommand();
-    void calculateSteeringAngle();
+    void checkSteeringLimits();
 
     void updateUI(bool update_steering_sensitivity = false, bool update_head_sensitivity = false);
     void drawWheelVisualization();
@@ -90,10 +92,6 @@ private:
     // Wheel visualization
     QGraphicsScene wheel_scene_;
 
-    // Robot State Subscriber
-    ros::Subscriber robot_state_sub_;
-    bool received_robot_state_;
-
     // Joypad Command Input
     ros::Subscriber joypad_command_sub_;
 
@@ -105,12 +103,16 @@ private:
     ros::Subscriber all_stop_enabled_sub_;
 
     // Steering Publishers
-    ros::Publisher head_command_pub_;
     ros::Publisher driving_command_pub_;
+    ros::Publisher head_move_to_default_pub_;
 
-    // Enable / Disable controller
+    // Enable / Disable controller, Reset
     ros::Publisher controller_enable_pub_;
     ros::Subscriber controller_enable_ack_sub_;
+    ros::Publisher controller_reset_pub_;
+
+    // Get absolute steering angle from robot
+    ros::Subscriber absolute_steering_angle_sub_;
 
     // Steering parameters
     double steering_sensitivity_;
@@ -129,21 +131,19 @@ private:
     double time_from_start_;
 
     // Head control elements
-    std::vector<std::string> head_joint_names_;
-    std::vector<double> head_default_position_;
     double head_tilt_speed_;
     double head_pan_speed_;
-    bool head_move_to_default_;
 
     // allow sensitivity changes
     bool allow_head_sensitivity_change_;
     bool allow_steering_sensitivity_change_;
 
-    // Current joint state
-    std::vector<std::string> robot_joint_names_;
-    std::vector<double> robot_joint_positions_;
-
     // is controller enabled
     bool controller_enabled_;
+
+    bool ignore_steering_limits_;
+
+    // joypad ids
+    int joypad_ids_[NUM_JOYPAD_IDS];
 };
 

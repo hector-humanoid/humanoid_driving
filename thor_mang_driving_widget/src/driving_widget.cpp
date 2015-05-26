@@ -14,14 +14,10 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
 
     // steering parameters
     steering_sensitivity_ = 2.5;
-    steering_correction_ = -1.0;
     head_sensitivity_ = 0.1;
-    head_tilt_correction_ = -1.0;
-    head_pan_correction_ = 1.0;
     allow_head_sensitivity_change_ = false;
-    allow_steering_sensitivity_change_ = true;
-    head_move_to_default_ = false;
-
+    allow_steering_sensitivity_change_ = false;
+    ignore_steering_limits_ = false;
 
     // Driving control elements
     all_stop_ = true;
@@ -30,13 +26,10 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     drive_forward_ = false;
 
     controller_enabled_ = false;
-    setGUIEnabled(false);
-
-    // Head control elements
-    head_tilt_speed_ = 0.0;
     head_pan_speed_ = 0.0;
-    node_handle_private_.getParam("head_joint_names", head_joint_names_);
-    node_handle_private_.getParam("head_default_position", head_default_position_);
+    head_tilt_speed_ = 0.0;
+
+    setGUIEnabled(false);
 
     // Get camera image topic
     node_handle_private_.param("camera_topic", camera_topic_, std::string("/head_cam/image_raw"));
@@ -44,24 +37,40 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     // Get joypad values
     joypad_command_sub_ = node_handle_.subscribe("/joy", 1, &DrivingWidget::handleJoyPadEvent, this);
 
-    // Get current robot state
-    std::string joint_state_topic;
-    node_handle_private_.param("joint_state_topic", joint_state_topic, std::string("/thor_mang/joint_states"));
-    robot_state_sub_ = node_handle_.subscribe(joint_state_topic, 1, &DrivingWidget::handleNewJointStateEvent, this);
-    received_robot_state_ = false;
+    // Get joypad ids
+    node_handle_private_.param("joypad_axis_steering", joypad_ids_[AXIS_STEERING], 0);
+    node_handle_private_.param("joypad_axis_head_pan", joypad_ids_[AXIS_HEAD_PAN], 2);
+    node_handle_private_.param("joypad_axis_head_tilt", joypad_ids_[AXIS_HEAD_TILT], 3);
 
-    // Setup head control publisher
-    std::string head_controller_topic;
-    node_handle_private_.param("head_controller_topic", head_controller_topic, std::string("/thor_mang/head_traj_controller/command"));
-    head_command_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(head_controller_topic, 1, false);
+    node_handle_private_.param("joypad_button_forward", joypad_ids_[BUTTON_FORWARD], 1);
+    node_handle_private_.param("joypad_button_all_stop", joypad_ids_[BUTTON_ALL_STOP], 2);
+    node_handle_private_.param("joypad_button_steering_sensitivity_plus", joypad_ids_[BUTTON_STEERING_SENSITIVITY_PLUS], 7);
+    node_handle_private_.param("joypad_button_steering_sensitivity_minus", joypad_ids_[BUTTON_STEERING_SENSITIVITY_MINUS], 6);
+    node_handle_private_.param("joypad_button_head_sensitivity_plus", joypad_ids_[BUTTON_HEAD_SENSITIVITY_PLUS], 5);
+    node_handle_private_.param("joypad_button_head_sensitivity_minus", joypad_ids_[BUTTON_HEAD_SENSITIVITY_MINUS], 4);
+    node_handle_private_.param("joypad_button_mode_to_default", joypad_ids_[BUTTON_HEAD_MODE_TO_DEFAULT], 11);
+
+    node_handle_private_.param("steering_correction_factor", steering_correction_, -1.0);
+    node_handle_private_.param("head_tilt_correction_factor", head_tilt_correction_, -1.0);
+    node_handle_private_.param("head_pan_correction_factor", head_pan_correction_, 1.0);
+
+    if ( joypad_ids_[BUTTON_STEERING_SENSITIVITY_PLUS] < 0 || joypad_ids_[BUTTON_STEERING_SENSITIVITY_PLUS] < 0 )
+        allow_steering_sensitivity_change_ = false;
+    if ( joypad_ids_[BUTTON_HEAD_SENSITIVITY_PLUS] < 0 || joypad_ids_[BUTTON_HEAD_SENSITIVITY_PLUS] < 0 )
+        allow_head_sensitivity_change_ = false;
 
     // Setup driving commands
     all_stop_enabled_sub_ = node_handle_.subscribe("driving_controller/all_stop", 1, &DrivingWidget::handleAllStopEnabled, this);
     driving_command_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingCommand>("driving_controller/driving_command", 1, false);
+    head_move_to_default_pub_ = node_handle_.advertise<std_msgs::Empty>("driving_controller/move_head_to_default", 1, false);
 
-    // Enable / Disable controller
+    // Enable / Disable controller, Reset
     controller_enable_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/controller_enable", 1, true);
     controller_enable_ack_sub_ = node_handle_.subscribe("driving_controller/controller_enable_ack", 1, &DrivingWidget::handleControllerEnableACK, this);
+    controller_reset_pub_ = node_handle_.advertise<std_msgs::Empty>("driving_controller/controller_reset", 1, false);
+
+    // Get absolute steering angle from controller
+    absolute_steering_angle_sub_ = node_handle_.subscribe("driving_controller/absolute_steering_angle", 1, &DrivingWidget::handleNewAbsoluteSteeringAngle, this);
 
     // setup user interface
     connect(ui_->pushButton_ConfirmSteeringSensitivity, SIGNAL(clicked()), this, SLOT(SLO_SteeringSensitivityConfirmed()));
@@ -71,6 +80,8 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     connect(ui_->pushButton_ShowCameraImage, SIGNAL(toggled(bool)), this, SLOT(SLO_ShowCameraImage(bool)));
     connect(ui_->pushButton_AllStop, SIGNAL(clicked(bool)), this, SLOT(SLO_AllStopButtonChecked(bool)));
     connect(ui_->pushButton_ToggleDrivingMode, SIGNAL(clicked()), this, SLOT(SLO_ToggleDrivingMode()));
+    connect(ui_->pushButton_Reset, SIGNAL(clicked()), this, SLOT(SLO_Reset()));
+    connect(ui_->pushButton_OverrideLimits, SIGNAL(clicked()), this, SLOT(SLO_OverrideLimits()));
 
     timer_.start(33, this);
 
@@ -89,7 +100,6 @@ DrivingWidget::~DrivingWidget()
 void DrivingWidget::timerEvent(QTimerEvent *event)
 {
     sendDrivingCommand();
-    sendHeadCommand();
 
     // check if ros is still running; if not, just kill the application
     if(!ros::ok())
@@ -184,7 +194,9 @@ void DrivingWidget::setGUIEnabled(bool enable) {
     ui_->pushButton_AllStop->setEnabled(enable);
     ui_->pushButton_ConfirmHeadSensitivity->setEnabled(enable);
     ui_->pushButton_ConfirmSteeringSensitivity->setEnabled(enable);
-    ui_->pushButton_ShowCameraImage->setEnabled(enable);
+    //ui_->pushButton_ShowCameraImage->setEnabled(enable);
+    ui_->pushButton_Reset->setEnabled(enable);
+    ui_->pushButton_OverrideLimits->setEnabled(enable);
     ui_->spinBox_HeadSensitivity->setEnabled(enable);
     ui_->spinBox_SteeringSensitivity->setEnabled(enable);
     ui_->lineEdit_SteeringAngle->setEnabled(enable);
@@ -193,8 +205,30 @@ void DrivingWidget::setGUIEnabled(bool enable) {
 
 void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
     QImage img(&(msg->data[0]), msg->width, msg->height, QImage::Format_RGB888);
+
+    // Draw all stop sign in img
+    if ( all_stop_ ) {
+        QPainter painter(&img); // sorry i forgot the "&"
+
+        painter.fillRect(70, 70, img.width()-140, img.height()-140, Qt::red);
+
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Arial", 48));
+        painter.drawText(img.rect(), Qt::AlignCenter, "All Stop!");
+    }
+
     QPixmap pixmap = QPixmap::fromImage(img.scaled( ui_->label_CameraImage->width()-8, ui_->label_CameraImage->height()-8, Qt::KeepAspectRatio));
     ui_->label_CameraImage->setPixmap(pixmap);
+}
+
+void DrivingWidget::handleNewAbsoluteSteeringAngle(std_msgs::Float64ConstPtr msg) {
+    absolute_steering_angle_ = msg->data;
+
+    steering_angle_ = absolute_steering_angle_;
+    while ( steering_angle_ >= 360.0 )  steering_angle_ -= 360.0;
+    while ( steering_angle_ < 0 )       steering_angle_ += 360.0;
+
+    updateUI();
 }
 
 void DrivingWidget::SLO_SteeringSensitivityChanged() {
@@ -241,31 +275,35 @@ void DrivingWidget::SLO_ToggleDrivingMode() {
 }
 
 
-void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
-    if ( !received_robot_state_ ) {
-        ROS_ERROR_THROTTLE(2, "No robot state received => No Update");
-        return;
-    }
+void DrivingWidget::SLO_Reset() {
+    controller_reset_pub_.publish(std_msgs::Empty());
+}
 
+void DrivingWidget::SLO_OverrideLimits() {
+    ui_->pushButton_OverrideLimits->setStyleSheet("color:#FF0000");
+    ignore_steering_limits_ = true;
+}
+
+void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
     if ( controller_enabled_ == false )
         return;
 
-    handleSteeringCommand(msg->axes[DrivingWidget::STEERING]);
-    handleHeadCommand(msg->axes[DrivingWidget::HEAD_TILT], msg->axes[DrivingWidget::HEAD_PAN]);
+    handleSteeringCommand(msg->axes[ joypad_ids_[DrivingWidget::AXIS_STEERING] ]);
+    handleHeadCommand(msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_TILT] ], msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_PAN]]);
 
-    drive_forward_ = msg->buttons[DrivingWidget::FORWARD];
+    drive_forward_ = msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_FORWARD] ];
 
-    if ( msg->buttons[DrivingWidget::ALL_STOP] )
+    if ( msg->buttons[ joypad_ids_[ DrivingWidget::BUTTON_ALL_STOP] ] )
         all_stop_ = !all_stop_;
 
     bool update_steering_sensitivity = false;
     if ( allow_steering_sensitivity_change_ ) {
-        if ( msg->buttons[DrivingWidget::STEERING_SENSITIVITY_PLUS] ) {
+        if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_STEERING_SENSITIVITY_PLUS]] ) {
             steering_sensitivity_ += 0.1;
             update_steering_sensitivity = true;
         }
 
-        if ( msg->buttons[DrivingWidget::STEERING_SENSITIVITY_MINUS] ) {
+        if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_STEERING_SENSITIVITY_MINUS]] ) {
             steering_sensitivity_ -= 0.1;
             update_steering_sensitivity = true;
         }
@@ -273,19 +311,19 @@ void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
 
     bool update_head_sensitivity = false;
     if ( allow_head_sensitivity_change_ ) {
-        if ( msg->buttons[DrivingWidget::HEAD_SENSITIVITY_PLUS] ) {
+        if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_HEAD_SENSITIVITY_PLUS]] ) {
             head_sensitivity_ += 0.1;
             update_head_sensitivity = true;
         }
 
-        if ( msg->buttons[DrivingWidget::HEAD_SENSITIVITY_MINUS] ) {
+        if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_HEAD_SENSITIVITY_MINUS]] ) {
             head_sensitivity_ -= 0.1;
             update_head_sensitivity = true;
         }
     }
 
-    if ( msg->buttons[DrivingWidget::HEAD_MODE_TO_DEFAULT] ) {
-        head_move_to_default_ = true;
+    if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_HEAD_MODE_TO_DEFAULT]] ) {
+        head_move_to_default_pub_.publish(std_msgs::Empty());
     }
 
     // don't allow negative sensitivities
@@ -298,11 +336,6 @@ void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
 void DrivingWidget::handleAllStopEnabled(thor_mang_driving_controller::DrivingCommandConstPtr msg) {
     all_stop_ = msg->all_stop;
     drive_forward_ = msg->drive_forward;
-    absolute_steering_angle_ = msg->absolute_steering_angle;
-
-    steering_angle_ = absolute_steering_angle_;
-    while ( steering_angle_ >= 360.0 )  steering_angle_ -= 360.0;
-    while ( steering_angle_ < 0 )       steering_angle_ += 360.0;
 
     updateUI();
 }
@@ -323,121 +356,45 @@ void DrivingWidget::handleControllerEnableACK(std_msgs::BoolConstPtr msg) {
     setGUIEnabled(controller_enabled_);
 }
 
-void DrivingWidget::handleNewJointStateEvent(sensor_msgs::JointStateConstPtr msg) {
-    robot_joint_names_ = msg->name;
-    robot_joint_positions_ = msg->position;
-    received_robot_state_ = true;
-}
-
 void DrivingWidget::sendDrivingCommand() {
     if ( controller_enabled_ == false )
         return;
 
-    calculateSteeringAngle();
+    checkSteeringLimits();
 
     thor_mang_driving_controller::DrivingCommand driving_command_msg;
     driving_command_msg.all_stop = all_stop_;
-    driving_command_msg.absolute_steering_angle = absolute_steering_angle_;
+    driving_command_msg.steering_angle_step = steering_speed_;
     driving_command_msg.drive_forward = drive_forward_;
+    driving_command_msg.head_tilt_speed = head_tilt_speed_;
+    driving_command_msg.head_pan_speed = head_pan_speed_;
+    driving_command_msg.ignore_steering_limits = ignore_steering_limits_;
     driving_command_pub_.publish(driving_command_msg);
-}
-
-
-void DrivingWidget::sendHeadCommand() {
-    if ( all_stop_ ) {
-        //ROS_INFO("All-Stop active! Steering blocked!");
-        return;
-    }
-
-    if ( !received_robot_state_ || !controller_enabled_) {
-        return;
-    }
-
-    // get current angles and add control offset
-    std::vector<double> target_head_positions( head_joint_names_.size() );
-
-    for ( int i = 0; i < head_joint_names_.size(); i++ ) {
-        for ( int j = 0; j < robot_joint_names_.size(); j++ ) {
-            if ( head_joint_names_[i] == robot_joint_names_[j] ) {
-                target_head_positions[i] = robot_joint_positions_[j];
-                break;
-            }
-        }
-    }
-
-    if ( head_move_to_default_ ) {
-        bool reached_position = true;
-        for ( int i = 0; i < target_head_positions.size(); i++ ) {
-            if ( std::abs(target_head_positions[i] - head_default_position_[i]) > 0.1 ) {
-                reached_position = false;
-                break;
-            }
-        }
-
-        target_head_positions = head_default_position_;
-        head_move_to_default_ = !reached_position;
-    }
-    else {
-        if ( head_joint_names_.size() >= 1 ) {
-            if ( head_joint_names_[0].find("pan") != std::string::npos )
-                target_head_positions[0] += head_pan_speed_;
-
-            if ( head_joint_names_[0].find("tilt") != std::string::npos )
-                target_head_positions[0] += head_tilt_speed_;
-        }
-
-        if ( head_joint_names_.size() >= 1 ) {
-            if ( head_joint_names_[1].find("pan") != std::string::npos )
-                target_head_positions[1] += head_pan_speed_;
-
-            if ( head_joint_names_[1].find("tilt") != std::string::npos )
-                target_head_positions[1] += head_tilt_speed_;
-        }
-    }
-
-
-    trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(target_head_positions, head_joint_names_);
-    if(head_move_to_default_)
-        trajectory_msg.points[0].time_from_start = ros::Duration(1.0);
-
-    head_command_pub_.publish(trajectory_msg);
 }
 
 void DrivingWidget::handleHeadCommand(double tilt, double pan) {
     head_tilt_speed_ = head_tilt_correction_ * head_sensitivity_ * tilt;
     head_pan_speed_  = head_pan_correction_ * head_sensitivity_ * pan;
+
 }
 
 void DrivingWidget::handleSteeringCommand(double step) {
     steering_speed_ = steering_correction_ * steering_sensitivity_ * step;
 }
 
-void DrivingWidget::calculateSteeringAngle() {
-    if ( !received_robot_state_ ) {
-        ROS_ERROR_THROTTLE(2, "No robot positions received => No Update");
-        return;
-    }
+void DrivingWidget::checkSteeringLimits() {
     if ( all_stop_ ) {
-        //ROS_INFO("All-Stop active! Steering blocked!");
-        return;
-    }
-    if (absolute_steering_angle_ + steering_speed_ <= -540.0 ||
-        absolute_steering_angle_ + steering_speed_ >=  540.0 ) {
-        //ROS_INFO("Rotation blocked: No more than 1.5 turns left / right allowed");
-        return; // do not allow more than 3 turns total
+        steering_speed_ = 0.0;
+        head_tilt_speed_ = 0.0;
+        head_pan_speed_ = 0.0;
     }
 
-    absolute_steering_angle_ += steering_speed_;
-
-    // publish current absolute angle for visualization
-
-    steering_angle_ += steering_speed_;
-    if ( steering_angle_ < 0.0 )
-        steering_angle_ += 360.0;
-    else if ( steering_angle_ >= 360.0)
-        steering_angle_ -= 360.0;
-
-    updateUI();
+    if (ignore_steering_limits_ == false ) {
+        if (absolute_steering_angle_ + steering_speed_ <= -540.0 ||
+            absolute_steering_angle_ + steering_speed_ >=  540.0 ) {
+            steering_speed_ = 0.0;
+        }
+    }
 }
 
 trajectory_msgs::JointTrajectory DrivingWidget::generateTrajectoryMsg(std::vector<double> &joint_angles, std::vector<std::string> joint_names) {

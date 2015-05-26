@@ -36,10 +36,12 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "driving_controller");
   thor_mang_driving_controller::DrivingController driving_controller;
 
-  ros::Rate rate(125);
+  ros::Rate rate(30);
   while (ros::ok()) {
       ros::spinOnce();
       driving_controller.checkReceivedMessages();
+      driving_controller.updateSteering();
+      driving_controller.updateHeadPosition();
       rate.sleep();
   }
 }
