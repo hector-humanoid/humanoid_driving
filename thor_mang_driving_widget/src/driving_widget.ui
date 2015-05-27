@@ -110,7 +110,7 @@ color:white;</string>
      </layout>
     </item>
     <item>
-     <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,3,1,0">
+     <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0,3,1">
       <item row="1" column="2">
        <widget class="QSlider" name="slider_HeadPan">
         <property name="enabled">

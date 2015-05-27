@@ -241,7 +241,7 @@ void DrivingWidget::drawWheelVisualization() {
         painter.setFont(QFont("Arial", 48));
         painter.drawText(img.rect(), Qt::AlignCenter, "All Stop!");*/
 
-        QGraphicsRectItem *background_item = wheel_scene_.addRect(-car_width/2.0+0.3, 0.0-car_length/12.0, car_width-0.6, car_length/6.0, QPen(Qt::yellow), QBrush(Qt::red));
+        QGraphicsRectItem *background_item = wheel_scene_.addRect(-car_width/2.0+0.3, 0.0-car_length/12.0, car_width-0.6, car_length/6.0, QPen(Qt::yellow), QBrush(Qt::yellow));
 
         QFont textFont;
         textFont.setBold(true);
@@ -464,11 +464,13 @@ void DrivingWidget::checkSteeringLimits() {
     }
 
     if (ignore_steering_limits_ == false ) {
-        if (current_absolute_steering_angle_ + steering_speed_ <= -540.0) {
-            steering_speed_ = steering_correction_ * steering_sensitivity_;
+        if (current_absolute_steering_angle_ + steering_speed_ < -540.0) {
+            absolute_target_steering_angle_ = -540.0;
+            steering_speed_ = 0.0;
         }
-        else if ( current_absolute_steering_angle_ + steering_speed_ >=  540.0 ) {
-            steering_speed_ = -steering_correction_ * steering_sensitivity_;
+        else if ( current_absolute_steering_angle_ + steering_speed_ >  540.0 ) {
+            absolute_target_steering_angle_ = 540.0;
+            steering_speed_ = 0.0;
         }
     }
 }
