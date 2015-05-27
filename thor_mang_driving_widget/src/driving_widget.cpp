@@ -260,13 +260,13 @@ void DrivingWidget::SLO_HeadSensitivityConfirmed() {
 }
 
 void DrivingWidget::SLO_ShowCameraImage(bool show) {
-//    if ( show ) {  //Camera not needed here, already have in OCS
-//        camera_image_sub_ = node_handle_.subscribe(camera_topic_, 1, &DrivingWidget::handleNewCameraImage, this);
-//    }
-//    else {
-//        camera_image_sub_.shutdown();
-//        ui_->label_CameraImage->setText("No Camera Image");
-//    }
+    if ( show ) {
+        camera_image_sub_ = node_handle_.subscribe(camera_topic_, 1, &DrivingWidget::handleNewCameraImage, this);
+    }
+    else {
+        camera_image_sub_.shutdown();
+        ui_->label_CameraImage->setText("No Camera Image");
+    }
 }
 
 void DrivingWidget::SLO_AllStopButtonChecked(bool active) {

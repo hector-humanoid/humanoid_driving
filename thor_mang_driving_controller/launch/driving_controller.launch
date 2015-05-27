@@ -8,7 +8,7 @@
 
     <!-- controller topics -->
     <rosparam param="steering_controller_topic">/joint_controllers/left_arm_traj_controller/command</rosparam>
-    <rosparam param="speed_controller_topic">/joint_controllers/left_leg_traj_controller/command</rosparam>
+    <rosparam param="speed_controller_topic">/joint_controllers/left_leg_drive_controller/command</rosparam>
     <rosparam param="head_controller_topic">/joint_controllers/neck_traj_controller/command</rosparam>
     <rosparam param="joint_state_topic">/atlas/joint_states</rosparam>
   </node>
