@@ -4,7 +4,7 @@
   <node name="driving_controller" pkg="thor_mang_driving_controller" type="driving_controller" output="screen">
     <rosparam file="$(find thor_mang_driving_controller)/config/steering/atlas_gazebo_wheel.yaml"/> <!-- steering config -->
     <rosparam file="$(find thor_mang_driving_controller)/config/throttle/atlas_leg.yaml"/> <!-- throttle config -->
-    <rosparam file="$(find thor_mang_driving_widget)/config/head_config.yaml"/> <!-- head config -->
+    <rosparam file="$(find thor_mang_driving_controller)/config/head_config.yaml"/> <!-- head config -->
 
     <!-- controller topics -->
     <rosparam param="steering_controller_topic">/joint_controllers/left_arm_traj_controller/command</rosparam>
