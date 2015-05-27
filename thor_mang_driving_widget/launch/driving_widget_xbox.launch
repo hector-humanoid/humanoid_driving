@@ -5,7 +5,7 @@
     <rosparam param="dev">/dev/input/js0</rosparam>
   </node>
   <node name="driving_widget" pkg="thor_mang_driving_widget" type="driving_widget" output="screen">
-    <rosparam param="camera_topic">/head_cam/image_raw</rosparam>
-    <rosparam file="$(find thor_mang_driving_widget)/config/xbox_joypad.yaml"/>
+    <rosparam param="camera_topic">/camera/image_raw</rosparam>
+    <rosparam file="$(find thor_mang_driving_widget)/config/logitech_joypad.yaml"/>
   </node>
 </launch>

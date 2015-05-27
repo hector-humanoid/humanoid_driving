@@ -107,6 +107,13 @@ color:white;</string>
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_Reset">
+        <property name="text">
+         <string>Reset</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
     <item>
@@ -240,31 +247,28 @@ color:white;</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_WheelAngle">
-          <property name="text">
-           <string>Wheel Angle:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1" colspan="2">
-         <widget class="QLineEdit" name="lineEdit_WheelAngle">
-          <property name="text">
-           <string>0.0 °</string>
-          </property>
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
+        <item row="3" column="0">
          <widget class="QLabel" name="label_SteeringSensitivity">
           <property name="text">
            <string>Steering Sensitivity:</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_HeadSensitivity">
+          <property name="text">
+           <string>Head Sensitivity:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="2">
+         <widget class="QPushButton" name="pushButton_ConfirmSteeringSensitivity">
+          <property name="text">
+           <string>Confirm</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
          <widget class="QDoubleSpinBox" name="spinBox_SteeringSensitivity">
           <property name="maximum">
            <double>10.000000000000000</double>
@@ -277,21 +281,7 @@ color:white;</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="2">
-         <widget class="QPushButton" name="pushButton_ConfirmSteeringSensitivity">
-          <property name="text">
-           <string>Confirm</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_HeadSensitivity">
-          <property name="text">
-           <string>Head Sensitivity:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
+        <item row="4" column="1">
          <widget class="QDoubleSpinBox" name="spinBox_HeadSensitivity">
           <property name="maximum">
            <double>10.000000000000000</double>
@@ -301,14 +291,14 @@ color:white;</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="2">
+        <item row="4" column="2">
          <widget class="QPushButton" name="pushButton_ConfirmHeadSensitivity">
           <property name="text">
            <string>Confirm</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="0" colspan="3">
+        <item row="5" column="0" colspan="3">
          <spacer name="verticalSpacer">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -320,6 +310,30 @@ color:white;</string>
            </size>
           </property>
          </spacer>
+        </item>
+        <item row="2" column="2">
+         <widget class="QPushButton" name="pushButton_OverrideLimits">
+          <property name="text">
+           <string>Override Limits</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="lineEdit_WheelAngle">
+          <property name="text">
+           <string>0.0 °</string>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_WheelAngle">
+          <property name="text">
+           <string>Wheel Angle:</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
@@ -357,7 +371,7 @@ color:white;</string>
          <string/>
         </property>
         <property name="pixmap">
-         <pixmap>:/imgs/hector_logo.png</pixmap>
+         <pixmap resource="res/resources.qrc">:/imgs/hector_logo.png</pixmap>
         </property>
         <property name="scaledContents">
          <bool>true</bool>
@@ -370,6 +384,8 @@ color:white;</string>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <resources/>
+ <resources>
+  <include location="res/resources.qrc"/>
+ </resources>
  <connections/>
 </ui>
