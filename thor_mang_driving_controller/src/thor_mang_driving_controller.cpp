@@ -9,7 +9,7 @@ DrivingController::DrivingController() :
 {
     initKeyFrames();
 
-    head_sensitivity_ = 0.1;
+    head_sensitivity_ = 2.5;
     steering_sensitivity_ = 2.5;
 
     last_command_received_.all_stop = true;
@@ -144,7 +144,7 @@ void DrivingController::updateHeadPosition() {
     }
 
     double head_pan_speed = 0.0;
-    double pan_factor = std::min(1.0, 0.1*fabs(last_command_received_.absolute_head_pan - current_head_positions[0]));
+    double pan_factor = std::min(1.0, 0.4*fabs(last_command_received_.absolute_head_pan - current_head_positions[0]));
     if ( last_command_received_.absolute_head_pan >= current_head_positions[0] ) {
         head_pan_speed = pan_factor * head_sensitivity_;
     }
@@ -153,13 +153,18 @@ void DrivingController::updateHeadPosition() {
     }
 
     double head_tilt_speed = 0.0;
-    double tilt_factor = std::min(1.0, 0.1*fabs(last_command_received_.absolute_head_tilt - current_head_positions[1]));
+    double tilt_factor = std::min(1.0, 0.4*fabs(last_command_received_.absolute_head_tilt - current_head_positions[1]));
     if ( last_command_received_.absolute_head_tilt >= current_head_positions[1] ) {
         head_tilt_speed = tilt_factor * head_sensitivity_;
     }
     else {
         head_tilt_speed = -tilt_factor * head_sensitivity_;
     }
+
+    ROS_INFO("head_pan_speed = %f", head_pan_speed);
+    ROS_INFO("pan_factor = %f", pan_factor);
+    ROS_INFO("head_tilt_speed = %f", head_tilt_speed);
+    ROS_INFO("tilt_factor = %f", tilt_factor);
 
     std::vector<double> target_head_positions = current_head_positions;
     target_head_positions[0] += head_pan_speed;
@@ -188,6 +193,10 @@ void DrivingController::updateSteering() {
 
     double target_angle = current_absolute_steering_angle_ + steering_speed;
     current_absolute_steering_angle_ = target_angle;
+
+    ROS_INFO("absolute_target_steering_angle = %f", last_command_received_.absolute_target_steering_angle);
+    ROS_INFO("current_absolute_steering_angle = %f", current_absolute_steering_angle_);
+
 
     // map to range [0,360]
     while ( target_angle >= 360.0 )  target_angle -= 360.0;

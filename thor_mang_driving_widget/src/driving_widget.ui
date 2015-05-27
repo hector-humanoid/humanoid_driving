@@ -117,13 +117,16 @@ color:white;</string>
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>-314</number>
+         <number>-157</number>
         </property>
         <property name="maximum">
-         <number>314</number>
+         <number>157</number>
         </property>
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="invertedAppearance">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -136,13 +139,19 @@ color:white;</string>
          <bool>false</bool>
         </property>
         <property name="minimum">
-         <number>-314</number>
+         <number>-132</number>
         </property>
         <property name="maximum">
-         <number>314</number>
+         <number>79</number>
         </property>
         <property name="orientation">
          <enum>Qt::Vertical</enum>
+        </property>
+        <property name="invertedAppearance">
+         <bool>true</bool>
+        </property>
+        <property name="invertedControls">
+         <bool>false</bool>
         </property>
        </widget>
       </item>

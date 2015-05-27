@@ -14,7 +14,7 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
 
     // steering parameters
     steering_sensitivity_ = 2.5;
-    head_sensitivity_ = 0.1;
+    head_sensitivity_ = 0.05;
     allow_head_sensitivity_change_ = false;
     allow_steering_sensitivity_change_ = false;
     ignore_steering_limits_ = false;
@@ -29,6 +29,8 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     controller_enabled_ = false;
     head_target_pan_ = 0.0;
     head_target_tilt_ = 0.0;
+    head_tilt_speed_ = 0.0;
+    head_pan_speed_ = 0.0;
 
     setGUIEnabled(false);
 
@@ -157,8 +159,8 @@ void DrivingWidget::updateUI(bool update_steering_sensitivity, bool update_head_
 
     drawWheelVisualization();
 
-    ui_->slider_HeadPan->setValue(head_target_pan_);
-    ui_->slider_HeadTilt->setValue(head_target_tilt_);
+    ui_->slider_HeadPan->setValue(head_target_pan_*100.0);
+    ui_->slider_HeadTilt->setValue(head_target_tilt_*100.0);
 
 
 }
@@ -390,6 +392,8 @@ void DrivingWidget::sendDrivingCommand() {
     checkSteeringLimits();
 
     absolute_target_steering_angle_ += steering_speed_;
+    head_target_pan_ += head_pan_speed_;
+    head_target_tilt_ += head_tilt_speed_;
 
     thor_mang_driving_controller::DrivingCommand driving_command_msg;
     driving_command_msg.all_stop = all_stop_;
@@ -401,8 +405,8 @@ void DrivingWidget::sendDrivingCommand() {
 }
 
 void DrivingWidget::handleHeadCommand(double tilt, double pan) {
-    head_target_pan_ += head_tilt_correction_ * head_sensitivity_ * tilt;
-    head_target_tilt_ += head_pan_correction_ * head_sensitivity_ * pan;
+    head_tilt_speed_ = head_tilt_correction_ * head_sensitivity_ * tilt;
+    head_pan_speed_ = head_pan_correction_ * head_sensitivity_ * pan;
 }
 
 void DrivingWidget::handleSteeringCommand(double step) {
@@ -410,6 +414,16 @@ void DrivingWidget::handleSteeringCommand(double step) {
 }
 
 void DrivingWidget::checkSteeringLimits() {
+    if ( head_target_pan_ + head_pan_speed_ <= -1.57 ||
+         head_target_pan_ + head_pan_speed_ >= 1.57 ) {
+        head_pan_speed_ = 0.0;
+    }
+
+    if ( head_target_tilt_ + head_tilt_speed_ <= -1.32 ||
+         head_target_tilt_ + head_tilt_speed_ >= 0.79 ) {
+        head_tilt_speed_ = 0.0;
+    }
+
     if (ignore_steering_limits_ == false ) {
         if (current_absolute_steering_angle_ + steering_speed_ <= -540.0 ||
             current_absolute_steering_angle_ + steering_speed_ >=  540.0 ) {
