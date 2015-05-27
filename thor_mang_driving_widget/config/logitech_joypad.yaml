@@ -15,4 +15,4 @@ joypad_button_mode_to_default: 11
 # correction factors for axis (-1: invert direction)
 steering_correction_factor: -1.0
 head_pan_correction_factor: 1.0
-head_tilt_correction_factor: -1.0
+head_tilt_correction_factor: 1.0
