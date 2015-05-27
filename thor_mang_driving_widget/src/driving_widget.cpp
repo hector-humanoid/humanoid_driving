@@ -27,8 +27,8 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     drive_forward_ = false;
 
     controller_enabled_ = false;
-    head_pan_speed_ = 0.0;
-    head_tilt_speed_ = 0.0;
+    head_target_pan_ = 0.0;
+    head_target_tilt_ = 0.0;
 
     setGUIEnabled(false);
 
@@ -63,7 +63,6 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     // Setup driving commands
     all_stop_enabled_sub_ = node_handle_.subscribe("driving_controller/all_stop", 1, &DrivingWidget::handleAllStopEnabled, this);
     driving_command_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingCommand>("driving_controller/driving_command", 1, false);
-    head_move_to_default_pub_ = node_handle_.advertise<std_msgs::Empty>("driving_controller/move_head_to_default", 1, false);
 
     // Enable / Disable controller, Reset
     controller_enable_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/controller_enable", 1, true);
@@ -81,7 +80,6 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     connect(ui_->pushButton_ShowCameraImage, SIGNAL(toggled(bool)), this, SLOT(SLO_ShowCameraImage(bool)));
     connect(ui_->pushButton_AllStop, SIGNAL(clicked(bool)), this, SLOT(SLO_AllStopButtonChecked(bool)));
     connect(ui_->pushButton_ToggleDrivingMode, SIGNAL(clicked()), this, SLOT(SLO_ToggleDrivingMode()));
-    connect(ui_->pushButton_Reset, SIGNAL(clicked()), this, SLOT(SLO_Reset()));
     connect(ui_->pushButton_OverrideLimits, SIGNAL(clicked()), this, SLOT(SLO_OverrideLimits()));
 
     timer_.start(33, this);
@@ -158,6 +156,11 @@ void DrivingWidget::updateUI(bool update_steering_sensitivity, bool update_head_
     ui_->dial_TargetSteeringPosition->setValue( (int)limited_target_steering_angle);
 
     drawWheelVisualization();
+
+    ui_->slider_HeadPan->setValue(head_target_pan_);
+    ui_->slider_HeadTilt->setValue(head_target_tilt_);
+
+
 }
 
 void DrivingWidget::drawWheelVisualization() {
@@ -228,7 +231,6 @@ void DrivingWidget::setGUIEnabled(bool enable) {
     ui_->pushButton_ConfirmHeadSensitivity->setEnabled(enable);
     ui_->pushButton_ConfirmSteeringSensitivity->setEnabled(enable);
     //ui_->pushButton_ShowCameraImage->setEnabled(enable);
-    ui_->pushButton_Reset->setEnabled(enable);
     ui_->pushButton_OverrideLimits->setEnabled(enable);
     ui_->spinBox_HeadSensitivity->setEnabled(enable);
     ui_->spinBox_SteeringSensitivity->setEnabled(enable);
@@ -299,11 +301,6 @@ void DrivingWidget::SLO_ToggleDrivingMode() {
     setGUIEnabled(false);
 }
 
-
-void DrivingWidget::SLO_Reset() {
-    controller_reset_pub_.publish(std_msgs::Empty());
-}
-
 void DrivingWidget::SLO_OverrideLimits() {
     ui_->pushButton_OverrideLimits->setStyleSheet("color:#FF0000");
     ignore_steering_limits_ = true;
@@ -348,7 +345,8 @@ void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
     }
 
     if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_HEAD_MODE_TO_DEFAULT]] ) {
-        head_move_to_default_pub_.publish(std_msgs::Empty());
+        head_target_pan_ = 0.0;
+        head_target_tilt_ = 0.0;
     }
 
     // don't allow negative sensitivities
@@ -392,32 +390,19 @@ void DrivingWidget::sendDrivingCommand() {
     checkSteeringLimits();
 
     absolute_target_steering_angle_ += steering_speed_;
-    double actual_steering_speed = 0.0;
-    double speed_factor = std::min(1.0, 0.2*fabs(absolute_target_steering_angle_ - current_absolute_steering_angle_));
-    ROS_INFO("speed_factor = %f", speed_factor);
-    ROS_INFO("diff = %f", fabs(absolute_target_steering_angle_ - current_absolute_steering_angle_));
-    if ( absolute_target_steering_angle_ - current_absolute_steering_angle_ > 0.05 ) {
-        actual_steering_speed = steering_sensitivity_*speed_factor;
-    }
-    else if ( absolute_target_steering_angle_ - current_absolute_steering_angle_ < -0.05) {
-        actual_steering_speed = -steering_sensitivity_*speed_factor;
-    }
-
 
     thor_mang_driving_controller::DrivingCommand driving_command_msg;
     driving_command_msg.all_stop = all_stop_;
-    driving_command_msg.steering_angle_step = actual_steering_speed;
+    driving_command_msg.absolute_target_steering_angle = absolute_target_steering_angle_;
     driving_command_msg.drive_forward = drive_forward_;
-    driving_command_msg.head_tilt_speed = head_tilt_speed_;
-    driving_command_msg.head_pan_speed = head_pan_speed_;
-    driving_command_msg.ignore_steering_limits = ignore_steering_limits_;
+    driving_command_msg.absolute_head_pan = head_target_pan_;
+    driving_command_msg.absolute_head_tilt = head_target_tilt_;
     driving_command_pub_.publish(driving_command_msg);
 }
 
 void DrivingWidget::handleHeadCommand(double tilt, double pan) {
-    head_tilt_speed_ = head_tilt_correction_ * head_sensitivity_ * tilt;
-    head_pan_speed_  = head_pan_correction_ * head_sensitivity_ * pan;
-
+    head_target_pan_ += head_tilt_correction_ * head_sensitivity_ * tilt;
+    head_target_tilt_ += head_pan_correction_ * head_sensitivity_ * pan;
 }
 
 void DrivingWidget::handleSteeringCommand(double step) {
@@ -425,12 +410,6 @@ void DrivingWidget::handleSteeringCommand(double step) {
 }
 
 void DrivingWidget::checkSteeringLimits() {
-    if ( all_stop_ ) {
-        steering_speed_ = 0.0;
-        head_tilt_speed_ = 0.0;
-        head_pan_speed_ = 0.0;
-    }
-
     if (ignore_steering_limits_ == false ) {
         if (current_absolute_steering_angle_ + steering_speed_ <= -540.0 ||
             current_absolute_steering_angle_ + steering_speed_ >=  540.0 ) {

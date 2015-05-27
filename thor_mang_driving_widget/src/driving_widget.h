@@ -65,7 +65,6 @@ public slots:
     void SLO_AllStopButtonChecked(bool active);
     void SLO_ToggleDrivingMode();
 
-    void SLO_Reset();
     void SLO_OverrideLimits();
 
 private:
@@ -132,6 +131,8 @@ private:
     double time_from_start_;
 
     // Head control elements
+    double head_target_tilt_;
+    double head_target_pan_;
     double head_tilt_speed_;
     double head_pan_speed_;
 
