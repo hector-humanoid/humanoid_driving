@@ -27,6 +27,8 @@ class DrivingWidget : public QMainWindow
       AXIS_STEERING=0,
       AXIS_HEAD_PAN,
       AXIS_HEAD_TILT,
+      AXIS_HEAD_PAN_2,
+      AXIS_HEAD_TILT_2,
       BUTTON_FORWARD,
       BUTTON_ALL_STOP,
       BUTTON_STEERING_SENSITIVITY_PLUS,
@@ -50,6 +52,8 @@ public:
     void handleControllerEnableACK(std_msgs::BoolConstPtr msg);
     void handleNewAbsoluteSteeringAngle(std_msgs::Float64ConstPtr msg);
 
+    void handleConnectionLoss(std_msgs::BoolConstPtr msg);
+
 protected:
     void timerEvent(QTimerEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
@@ -65,7 +69,7 @@ public slots:
     void SLO_AllStopButtonChecked(bool active);
     void SLO_ToggleDrivingMode();
 
-    void SLO_OverrideLimits();
+    void SLO_OverrideLimits(bool override);
 
 private:
     void sendDrivingCommand();
@@ -113,6 +117,9 @@ private:
     // Get absolute steering angle from robot
     ros::Subscriber absolute_steering_angle_sub_;
 
+    // Connection loss repaired?
+    ros::Subscriber connection_loss_sub_;
+
     // Steering parameters
     double steering_sensitivity_;
     double steering_speed_;
@@ -147,5 +154,7 @@ private:
 
     // joypad ids
     int joypad_ids_[NUM_JOYPAD_IDS];
+
+    bool connection_lost_;
 };
 

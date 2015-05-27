@@ -9,6 +9,8 @@ DrivingController::DrivingController() :
 {
     initKeyFrames();
 
+    connection_loss_ = false;
+
     head_sensitivity_ = 2.5;
     steering_sensitivity_ = 2.5;
 
@@ -44,6 +46,7 @@ DrivingController::DrivingController() :
 
     // all stop enabled on robot side
     all_stop_enabled_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingCommand>("driving_controller/all_stop", 1, false);
+    connection_lost_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/connection_lost", 1, false);
 
     // publish absolute steering angle
     absolute_steering_angle_pub_ = node_handle_.advertise<std_msgs::Float64>("driving_controller/absolute_steering_angle", 1, true);
@@ -72,8 +75,11 @@ void DrivingController::checkReceivedMessages() {
 
     ros::Duration time_since_last_msg = ros::Time::now() - last_command_received_time_;
     if ( time_since_last_msg >= ros::Duration(1.0)) { // OCS not alive? Go to "all stop"
-        last_command_received_.all_stop = true;
-        allStop();
+        //last_command_received_.all_stop = true;
+        last_command_received_.drive_forward = false;
+        updateDriveForward(false);
+
+        connection_loss_ = true;
 
         // inform OCS of current state (once a second)
         if ( ros::Time::now() - last_auto_stop_info_sent_time_ >= ros::Duration(1.0) ) {
@@ -82,9 +88,19 @@ void DrivingController::checkReceivedMessages() {
             std_msgs::Float64 absolute_steering_angle_msg;
             absolute_steering_angle_msg.data = current_absolute_steering_angle_;
             absolute_steering_angle_pub_.publish(absolute_steering_angle_msg);
-            ROS_WARN("[DrivingController] OCS connection timed out. Going to All-Stop.");
+            ROS_WARN("[DrivingController] OCS connection timed out. Going to Stop.");
             last_auto_stop_info_sent_time_ = ros::Time::now();
         }
+    }
+    else {
+        if ( connection_loss_ ) {
+            connection_loss_ = false;
+
+            std_msgs::Bool connection_lost_msg;
+            connection_lost_msg.data = false;
+            connection_lost_pub_.publish(connection_lost_msg);
+        }
+
     }
 }
 
@@ -194,8 +210,8 @@ void DrivingController::updateSteering() {
     double target_angle = current_absolute_steering_angle_ + steering_speed;
     current_absolute_steering_angle_ = target_angle;
 
-    ROS_INFO("absolute_target_steering_angle = %f", last_command_received_.absolute_target_steering_angle);
-    ROS_INFO("current_absolute_steering_angle = %f", current_absolute_steering_angle_);
+    //ROS_INFO("absolute_target_steering_angle = %f", last_command_received_.absolute_target_steering_angle);
+    //ROS_INFO("current_absolute_steering_angle = %f", current_absolute_steering_angle_);
 
 
     // map to range [0,360]

@@ -2,6 +2,8 @@
 joypad_axis_steering: 0
 joypad_axis_head_pan: 2
 joypad_axis_head_tilt: 3
+joypad_axis_head_pan_2: 4
+joypad_axis_head_tilt_2: 5
 
 # button ids
 joypad_button_forward: 1

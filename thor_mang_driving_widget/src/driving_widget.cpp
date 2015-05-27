@@ -14,7 +14,7 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
 
     // steering parameters
     steering_sensitivity_ = 2.5;
-    head_sensitivity_ = 0.05;
+    head_sensitivity_ = 0.01;
     allow_head_sensitivity_change_ = false;
     allow_steering_sensitivity_change_ = false;
     ignore_steering_limits_ = false;
@@ -32,6 +32,8 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     head_tilt_speed_ = 0.0;
     head_pan_speed_ = 0.0;
 
+    connection_lost_ = false;
+
     setGUIEnabled(false);
 
     // Get camera image topic
@@ -44,6 +46,8 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     node_handle_private_.param("joypad_axis_steering", joypad_ids_[AXIS_STEERING], 0);
     node_handle_private_.param("joypad_axis_head_pan", joypad_ids_[AXIS_HEAD_PAN], 2);
     node_handle_private_.param("joypad_axis_head_tilt", joypad_ids_[AXIS_HEAD_TILT], 3);
+    node_handle_private_.param("joypad_axis_head_tilt_2", joypad_ids_[AXIS_HEAD_TILT_2], 4);
+    node_handle_private_.param("joypad_axis_head_pan_2", joypad_ids_[AXIS_HEAD_PAN_2], 5);
 
     node_handle_private_.param("joypad_button_forward", joypad_ids_[BUTTON_FORWARD], 1);
     node_handle_private_.param("joypad_button_all_stop", joypad_ids_[BUTTON_ALL_STOP], 2);
@@ -74,6 +78,8 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     // Get absolute steering angle from controller
     absolute_steering_angle_sub_ = node_handle_.subscribe("driving_controller/absolute_steering_angle", 1, &DrivingWidget::handleNewAbsoluteSteeringAngle, this);
 
+    connection_loss_sub_ = node_handle_.subscribe("driving_controller/connection_loss", 1, &DrivingWidget::handleConnectionLoss, this);
+
     // setup user interface
     connect(ui_->pushButton_ConfirmSteeringSensitivity, SIGNAL(clicked()), this, SLOT(SLO_SteeringSensitivityConfirmed()));
     connect(ui_->spinBox_SteeringSensitivity, SIGNAL(valueChanged(double)), this, SLOT(SLO_SteeringSensitivityChanged()));
@@ -82,7 +88,7 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     connect(ui_->pushButton_ShowCameraImage, SIGNAL(toggled(bool)), this, SLOT(SLO_ShowCameraImage(bool)));
     connect(ui_->pushButton_AllStop, SIGNAL(clicked(bool)), this, SLOT(SLO_AllStopButtonChecked(bool)));
     connect(ui_->pushButton_ToggleDrivingMode, SIGNAL(clicked()), this, SLOT(SLO_ToggleDrivingMode()));
-    connect(ui_->pushButton_OverrideLimits, SIGNAL(clicked()), this, SLOT(SLO_OverrideLimits()));
+    connect(ui_->pushButton_OverrideLimits, SIGNAL(toggled(bool)), this, SLOT(SLO_OverrideLimits(bool)));
 
     timer_.start(33, this);
 
@@ -205,6 +211,7 @@ void DrivingWidget::drawWheelVisualization() {
 
     // show all stop
     // Draw all stop sign in img
+
     if ( all_stop_ ) {
         /*
         QPainter painter(&img); // sorry i forgot the "&"
@@ -224,6 +231,27 @@ void DrivingWidget::drawWheelVisualization() {
         allStopTextItem->setDefaultTextColor(Qt::white);
         allStopTextItem->moveBy( -allStopTextItem->boundingRect().width()/2.0, -allStopTextItem->boundingRect().height()/2.0);
     }
+    else if ( connection_lost_ ) {
+        /*
+        QPainter painter(&img); // sorry i forgot the "&"
+
+        painter.fillRect(70, 70, img.width()-140, img.height()-140, Qt::red);
+
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Arial", 48));
+        painter.drawText(img.rect(), Qt::AlignCenter, "All Stop!");*/
+
+        QGraphicsRectItem *background_item = wheel_scene_.addRect(-car_width/2.0+0.3, 0.0-car_length/12.0, car_width-0.6, car_length/6.0, QPen(Qt::yellow), QBrush(Qt::red));
+
+        QFont textFont;
+        textFont.setBold(true);
+        textFont.setPixelSize(background_item->boundingRect().height()-0.5);
+        QGraphicsTextItem *allStopTextItem = wheel_scene_.addText("No Signal!", textFont);
+        allStopTextItem->setDefaultTextColor(Qt::black);
+        allStopTextItem->moveBy( -allStopTextItem->boundingRect().width()/2.0, -allStopTextItem->boundingRect().height()/2.0);
+    }
+
+
 
     ui_->graphicsView_Wheels->centerOn(0.0, 0.0);
 }
@@ -242,6 +270,7 @@ void DrivingWidget::setGUIEnabled(bool enable) {
 
 void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
     QImage img(&(msg->data[0]), msg->width, msg->height, QImage::Format_RGB888);
+    img = img.rgbSwapped();
     QPixmap pixmap = QPixmap::fromImage(img.scaled( ui_->label_CameraImage->width()-8, ui_->label_CameraImage->height()-8, Qt::KeepAspectRatio));
     ui_->label_CameraImage->setPixmap(pixmap);
 }
@@ -258,6 +287,10 @@ void DrivingWidget::handleNewAbsoluteSteeringAngle(std_msgs::Float64ConstPtr msg
     while ( current_steering_angle_ < 0 )       current_steering_angle_ += 360.0;
 
     updateUI();
+}
+
+void DrivingWidget::handleConnectionLoss(std_msgs::BoolConstPtr msg) {
+    connection_lost_ = msg->data;
 }
 
 void DrivingWidget::SLO_SteeringSensitivityChanged() {
@@ -303,9 +336,12 @@ void DrivingWidget::SLO_ToggleDrivingMode() {
     setGUIEnabled(false);
 }
 
-void DrivingWidget::SLO_OverrideLimits() {
-    ui_->pushButton_OverrideLimits->setStyleSheet("color:#FF0000");
-    ignore_steering_limits_ = true;
+void DrivingWidget::SLO_OverrideLimits(bool override) {
+    if ( override ) {
+        ui_->pushButton_OverrideLimits->setStyleSheet("color:#FF0000");
+    }
+
+    ignore_steering_limits_ = override;
 }
 
 void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
@@ -313,6 +349,7 @@ void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
         return;
 
     handleSteeringCommand(msg->axes[ joypad_ids_[DrivingWidget::AXIS_STEERING] ]);
+    handleHeadCommand(msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_TILT_2] ], msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_PAN_2]]);
     handleHeadCommand(msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_TILT] ], msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_PAN]]);
 
     drive_forward_ = msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_FORWARD] ];
@@ -365,6 +402,8 @@ void DrivingWidget::handleAllStopEnabled(thor_mang_driving_controller::DrivingCo
     if ( all_stop_ ) {
         absolute_target_steering_angle_ = current_absolute_steering_angle_;
     }
+
+    connection_lost_ = true;
 
     updateUI();
 }
@@ -425,9 +464,11 @@ void DrivingWidget::checkSteeringLimits() {
     }
 
     if (ignore_steering_limits_ == false ) {
-        if (current_absolute_steering_angle_ + steering_speed_ <= -540.0 ||
-            current_absolute_steering_angle_ + steering_speed_ >=  540.0 ) {
-            steering_speed_ = 0.0;
+        if (current_absolute_steering_angle_ + steering_speed_ <= -540.0) {
+            steering_speed_ = steering_correction_ * steering_sensitivity_;
+        }
+        else if ( current_absolute_steering_angle_ + steering_speed_ >=  540.0 ) {
+            steering_speed_ = -steering_correction_ * steering_sensitivity_;
         }
     }
 }

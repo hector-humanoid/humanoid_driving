@@ -110,8 +110,8 @@ color:white;</string>
      </layout>
     </item>
     <item>
-     <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,3,1">
-      <item row="0" column="1">
+     <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,3,1,0">
+      <item row="1" column="2">
        <widget class="QSlider" name="slider_HeadPan">
         <property name="enabled">
          <bool>false</bool>
@@ -128,12 +128,18 @@ color:white;</string>
         <property name="invertedAppearance">
          <bool>true</bool>
         </property>
+        <property name="tickPosition">
+         <enum>QSlider::NoTicks</enum>
+        </property>
+        <property name="tickInterval">
+         <number>500</number>
+        </property>
        </widget>
       </item>
-      <item row="0" column="2" rowspan="2">
+      <item row="1" column="3" rowspan="2">
        <widget class="QGraphicsView" name="graphicsView_Wheels"/>
       </item>
-      <item row="1" column="0">
+      <item row="2" column="1">
        <widget class="QSlider" name="slider_HeadTilt">
         <property name="enabled">
          <bool>false</bool>
@@ -153,9 +159,12 @@ color:white;</string>
         <property name="invertedControls">
          <bool>false</bool>
         </property>
+        <property name="tickInterval">
+         <number>500</number>
+        </property>
        </widget>
       </item>
-      <item row="1" column="1">
+      <item row="2" column="2">
        <widget class="QLabel" name="label_CameraImage">
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
@@ -171,12 +180,44 @@ color:white;</string>
         </property>
        </widget>
       </item>
+      <item row="0" column="2">
+       <widget class="QLabel" name="label_Tick">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>5</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>5</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>|</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;br/&gt;&lt;br/&gt;&lt;br/&gt;&lt;br/&gt;&lt;br/&gt;&lt;br/&gt;&lt;br/&gt;-&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,1,0,3,0,0">
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1,0">
+       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,1,0">
         <item>
          <spacer name="verticalSpacer_3">
           <property name="orientation">
@@ -197,6 +238,22 @@ color:white;</string>
          <widget class="QLabel" name="label_CurrentSteeringPosition">
           <property name="text">
            <string>Current Position</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>5</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>|</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
@@ -250,7 +307,7 @@ color:white;</string>
        </layout>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,1,0">
+       <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0,1,0">
         <item>
          <spacer name="verticalSpacer_4">
           <property name="orientation">
@@ -271,6 +328,22 @@ color:white;</string>
          <widget class="QLabel" name="label_TargetSteeringPosition_2">
           <property name="text">
            <string>Target Position</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>5</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>|</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
@@ -404,10 +477,16 @@ color:white;</string>
           <property name="text">
            <string>Override Limits</string>
           </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
         <item row="4" column="1">
          <widget class="QDoubleSpinBox" name="spinBox_HeadSensitivity">
+          <property name="decimals">
+           <number>4</number>
+          </property>
           <property name="maximum">
            <double>10.000000000000000</double>
           </property>

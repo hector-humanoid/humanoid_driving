@@ -57,6 +57,7 @@ private:
   ros::Publisher all_stop_enabled_pub_;
   ros::Publisher controller_enable_ack_pub_;
   ros::Publisher absolute_steering_angle_pub_;
+  ros::Publisher connection_lost_pub_;
 
   // steering command stuff
   thor_mang_driving_controller::DrivingCommand last_command_received_;
@@ -84,7 +85,6 @@ private:
   // time when the last command was received (for alive-messages)
   ros::Time last_command_received_time_;
   ros::Time last_auto_stop_info_sent_time_;
-
   bool controller_enabled_;
 
   // accumulate absolute steering angle
@@ -92,6 +92,8 @@ private:
 
   double head_sensitivity_;
   double steering_sensitivity_;
+
+  bool connection_loss_;
 
 };
 
