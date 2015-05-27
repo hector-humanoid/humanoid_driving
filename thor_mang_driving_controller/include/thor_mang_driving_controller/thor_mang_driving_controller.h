@@ -8,6 +8,7 @@
 #include <sensor_msgs/JointState.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <thor_mang_driving_controller/DrivingCommand.h>
+#include <thor_mang_driving_controller/DrivingState.h>
 
 namespace thor_mang_driving_controller {
   
@@ -24,8 +25,6 @@ public:
   void handleNewJointStateEvent(sensor_msgs::JointStateConstPtr msg);
   void handleNewTimeFromStart(std_msgs::Float64ConstPtr msg);
   void handleControllerEnable(std_msgs::BoolConstPtr msg);
-  void handleControllerReset(std_msgs::EmptyConstPtr msg);
-  void handleMoveHeadToDefault(std_msgs::EmptyConstPtr msg);
 
   void updateSteering();
   void updateHeadPosition();
@@ -51,8 +50,6 @@ private:
   ros::Subscriber joint_state_sub_;
   ros::Subscriber driving_command_sub_;
   ros::Subscriber controller_enable_sub_;
-  ros::Subscriber controller_reset_sub_;
-  ros::Subscriber move_head_to_default_sub_;
 
   // Publisher for controller commands
   ros::Publisher steering_control_cmd_pub_;
@@ -60,7 +57,7 @@ private:
   ros::Publisher head_cmd_pub_;
   ros::Publisher all_stop_enabled_pub_;
   ros::Publisher controller_enable_ack_pub_;
-  ros::Publisher absolute_steering_angle_pub_;
+  ros::Publisher driving_state_pub_;
 
   // steering command stuff
   thor_mang_driving_controller::DrivingCommand last_command_received_;
@@ -88,18 +85,16 @@ private:
   // time when the last command was received (for alive-messages)
   ros::Time last_command_received_time_;
   ros::Time last_auto_stop_info_sent_time_;
-
   bool controller_enabled_;
 
   // accumulate absolute steering angle
-  double absolute_steering_angle_;
+  double current_absolute_steering_angle_;
 
-  ros::Time last_steering_update_;
+  double head_sensitivity_;
+  double steering_sensitivity_;
 
-  // Head control elements
-  std::vector<std::string> head_joint_names_;
-  std::vector<double> head_default_position_;
-  bool move_head_to_default_;
+  bool connection_loss_;
+
 };
 
 

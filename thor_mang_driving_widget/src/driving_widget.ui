@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1037</width>
-    <height>494</height>
+    <width>843</width>
+    <height>506</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -32,9 +32,9 @@
      <height>0</height>
     </size>
    </property>
-   <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,1,0">
+   <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,1,0">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
+     <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0,0,0,0">
       <item>
        <widget class="QPushButton" name="pushButton_ShowCameraImage">
         <property name="text">
@@ -107,18 +107,36 @@ color:white;</string>
         </property>
        </widget>
       </item>
-      <item>
-       <widget class="QPushButton" name="pushButton_Reset">
-        <property name="text">
-         <string>Reset</string>
-        </property>
-       </widget>
-      </item>
      </layout>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="2,1">
-      <item>
+     <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0,3,1">
+      <item row="2" column="1">
+       <widget class="QSlider" name="slider_HeadTilt">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>-132</number>
+        </property>
+        <property name="maximum">
+         <number>79</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="invertedAppearance">
+         <bool>true</bool>
+        </property>
+        <property name="invertedControls">
+         <bool>false</bool>
+        </property>
+        <property name="tickInterval">
+         <number>500</number>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
        <widget class="QLabel" name="label_CameraImage">
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
@@ -134,15 +152,102 @@ color:white;</string>
         </property>
        </widget>
       </item>
-      <item>
+      <item row="1" column="2">
+       <widget class="QSlider" name="slider_HeadPan">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>-157</number>
+        </property>
+        <property name="maximum">
+         <number>157</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="invertedAppearance">
+         <bool>true</bool>
+        </property>
+        <property name="tickPosition">
+         <enum>QSlider::NoTicks</enum>
+        </property>
+        <property name="tickInterval">
+         <number>500</number>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QLabel" name="label_Tick">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>5</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>5</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>|</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3" rowspan="2">
        <widget class="QGraphicsView" name="graphicsView_Wheels"/>
+      </item>
+      <item row="2" column="0">
+       <layout class="QVBoxLayout" name="verticalLayout_3" stretch="5,0,3">
+        <item>
+         <spacer name="verticalSpacer_6">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_HorizontalTick">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;-&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTop|Qt::AlignTrailing</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_7">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,1,0,0">
+     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,1,0,3,0,0">
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1,0">
+       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,1,0">
         <item>
          <spacer name="verticalSpacer_3">
           <property name="orientation">
@@ -160,14 +265,33 @@ color:white;</string>
          </spacer>
         </item>
         <item>
-         <widget class="QLabel" name="label_TargetSteeringPosition">
+         <widget class="QLabel" name="label_CurrentSteeringPosition">
           <property name="text">
-           <string>Target Steering Position:</string>
+           <string>Current Position</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QDial" name="dial_TargetSteeringPosition">
+         <widget class="QLabel" name="label_2">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>5</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>|</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDial" name="dial_CurrentSteeringPosition">
           <property name="enabled">
            <bool>false</bool>
           </property>
@@ -213,6 +337,96 @@ color:white;</string>
        </layout>
       </item>
       <item>
+       <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0,1,0">
+        <item>
+         <spacer name="verticalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>1</width>
+            <height>3</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_TargetSteeringPosition_2">
+          <property name="text">
+           <string>Target Position</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>5</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>|</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDial" name="dial_TargetSteeringPosition">
+          <property name="enabled">
+           <bool>false</bool>
+          </property>
+          <property name="minimum">
+           <number>-180</number>
+          </property>
+          <property name="maximum">
+           <number>180</number>
+          </property>
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="invertedAppearance">
+           <bool>false</bool>
+          </property>
+          <property name="invertedControls">
+           <bool>false</bool>
+          </property>
+          <property name="wrapping">
+           <bool>true</bool>
+          </property>
+          <property name="notchTarget">
+           <double>0.000000000000000</double>
+          </property>
+          <property name="notchesVisible">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_5">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>0</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -229,7 +443,7 @@ color:white;</string>
        </spacer>
       </item>
       <item>
-       <layout class="QGridLayout" name="gridLayout" columnstretch="0,1,0">
+       <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0">
         <item row="0" column="0">
          <widget class="QLabel" name="label_SteeringAngle">
           <property name="text">
@@ -281,20 +495,33 @@ color:white;</string>
           </property>
          </widget>
         </item>
+        <item row="4" column="2">
+         <widget class="QPushButton" name="pushButton_ConfirmHeadSensitivity">
+          <property name="text">
+           <string>Confirm</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2">
+         <widget class="QPushButton" name="pushButton_OverrideLimits">
+          <property name="text">
+           <string>Override Limits</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
         <item row="4" column="1">
          <widget class="QDoubleSpinBox" name="spinBox_HeadSensitivity">
+          <property name="decimals">
+           <number>4</number>
+          </property>
           <property name="maximum">
            <double>10.000000000000000</double>
           </property>
           <property name="singleStep">
            <double>0.100000000000000</double>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="2">
-         <widget class="QPushButton" name="pushButton_ConfirmHeadSensitivity">
-          <property name="text">
-           <string>Confirm</string>
           </property>
          </widget>
         </item>
@@ -311,10 +538,10 @@ color:white;</string>
           </property>
          </spacer>
         </item>
-        <item row="2" column="2">
-         <widget class="QPushButton" name="pushButton_OverrideLimits">
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_WheelAngle">
           <property name="text">
-           <string>Override Limits</string>
+           <string>Wheel Angle:</string>
           </property>
          </widget>
         </item>
@@ -325,13 +552,6 @@ color:white;</string>
           </property>
           <property name="readOnly">
            <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_WheelAngle">
-          <property name="text">
-           <string>Wheel Angle:</string>
           </property>
          </widget>
         </item>
