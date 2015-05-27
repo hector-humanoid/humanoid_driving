@@ -32,7 +32,7 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     head_tilt_speed_ = 0.0;
     head_pan_speed_ = 0.0;
 
-    connection_lost_ = false;
+    connection_loss_ = false;
 
     setGUIEnabled(false);
 
@@ -55,7 +55,8 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     node_handle_private_.param("joypad_button_steering_sensitivity_minus", joypad_ids_[BUTTON_STEERING_SENSITIVITY_MINUS], 6);
     node_handle_private_.param("joypad_button_head_sensitivity_plus", joypad_ids_[BUTTON_HEAD_SENSITIVITY_PLUS], 5);
     node_handle_private_.param("joypad_button_head_sensitivity_minus", joypad_ids_[BUTTON_HEAD_SENSITIVITY_MINUS], 4);
-    node_handle_private_.param("joypad_button_mode_to_default", joypad_ids_[BUTTON_HEAD_MODE_TO_DEFAULT], 11);
+    node_handle_private_.param("joypad_button_head_to_default", joypad_ids_[BUTTON_HEAD_TO_DEFAULT], 11);
+    node_handle_private_.param("joypad_button_steering_to_default", joypad_ids_[BUTTON_STEERING_TO_DEFAULT], 10);
 
     node_handle_private_.param("steering_correction_factor", steering_correction_, -1.0);
     node_handle_private_.param("head_tilt_correction_factor", head_tilt_correction_, -1.0);
@@ -73,12 +74,9 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     // Enable / Disable controller, Reset
     controller_enable_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/controller_enable", 1, true);
     controller_enable_ack_sub_ = node_handle_.subscribe("driving_controller/controller_enable_ack", 1, &DrivingWidget::handleControllerEnableACK, this);
-    controller_reset_pub_ = node_handle_.advertise<std_msgs::Empty>("driving_controller/controller_reset", 1, false);
 
     // Get absolute steering angle from controller
-    absolute_steering_angle_sub_ = node_handle_.subscribe("driving_controller/absolute_steering_angle", 1, &DrivingWidget::handleNewAbsoluteSteeringAngle, this);
-
-    connection_loss_sub_ = node_handle_.subscribe("driving_controller/connection_loss", 1, &DrivingWidget::handleConnectionLoss, this);
+    driving_state_sub_ = node_handle_.subscribe("driving_controller/driving_state", 1, &DrivingWidget::handleNewDrivingState, this);
 
     // setup user interface
     connect(ui_->pushButton_ConfirmSteeringSensitivity, SIGNAL(clicked()), this, SLOT(SLO_SteeringSensitivityConfirmed()));
@@ -107,6 +105,7 @@ DrivingWidget::~DrivingWidget()
 void DrivingWidget::timerEvent(QTimerEvent *event)
 {
     sendDrivingCommand();
+    updateUI();
 
     // check if ros is still running; if not, just kill the application
     if(!ros::ok())
@@ -231,7 +230,7 @@ void DrivingWidget::drawWheelVisualization() {
         allStopTextItem->setDefaultTextColor(Qt::white);
         allStopTextItem->moveBy( -allStopTextItem->boundingRect().width()/2.0, -allStopTextItem->boundingRect().height()/2.0);
     }
-    else if ( connection_lost_ ) {
+    else if ( connection_loss_ ) {
         /*
         QPainter painter(&img); // sorry i forgot the "&"
 
@@ -275,8 +274,9 @@ void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
     ui_->label_CameraImage->setPixmap(pixmap);
 }
 
-void DrivingWidget::handleNewAbsoluteSteeringAngle(std_msgs::Float64ConstPtr msg) {
-    current_absolute_steering_angle_ = msg->data;
+void DrivingWidget::handleNewDrivingState(thor_mang_driving_controller::DrivingStateConstPtr msg) {
+    current_absolute_steering_angle_ = msg->current_absolute_steering_angle;
+    connection_loss_ = msg->connection_loss;
 
     if ( all_stop_ ) {
         absolute_target_steering_angle_ = current_absolute_steering_angle_;
@@ -285,12 +285,6 @@ void DrivingWidget::handleNewAbsoluteSteeringAngle(std_msgs::Float64ConstPtr msg
     current_steering_angle_ = current_absolute_steering_angle_;
     while ( current_steering_angle_ >= 360.0 )  current_steering_angle_ -= 360.0;
     while ( current_steering_angle_ < 0 )       current_steering_angle_ += 360.0;
-
-    updateUI();
-}
-
-void DrivingWidget::handleConnectionLoss(std_msgs::BoolConstPtr msg) {
-    connection_lost_ = msg->data;
 }
 
 void DrivingWidget::SLO_SteeringSensitivityChanged() {
@@ -323,7 +317,6 @@ void DrivingWidget::SLO_ShowCameraImage(bool show) {
 
 void DrivingWidget::SLO_AllStopButtonChecked(bool active) {
     all_stop_ = active;
-    updateUI();
 }
 
 void DrivingWidget::SLO_ToggleDrivingMode() {
@@ -339,6 +332,9 @@ void DrivingWidget::SLO_ToggleDrivingMode() {
 void DrivingWidget::SLO_OverrideLimits(bool override) {
     if ( override ) {
         ui_->pushButton_OverrideLimits->setStyleSheet("color:#FF0000");
+    }
+    else {
+        ui_->pushButton_OverrideLimits->setStyleSheet("color:000000");
     }
 
     ignore_steering_limits_ = override;
@@ -383,9 +379,13 @@ void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
         }
     }
 
-    if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_HEAD_MODE_TO_DEFAULT]] ) {
+    if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_HEAD_TO_DEFAULT]] ) {
         head_target_pan_ = 0.0;
         head_target_tilt_ = 0.0;
+    }
+
+    if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_STEERING_TO_DEFAULT]] ) {
+        absolute_target_steering_angle_ = 0.0;
     }
 
     // don't allow negative sensitivities
@@ -402,10 +402,6 @@ void DrivingWidget::handleAllStopEnabled(thor_mang_driving_controller::DrivingCo
     if ( all_stop_ ) {
         absolute_target_steering_angle_ = current_absolute_steering_angle_;
     }
-
-    connection_lost_ = true;
-
-    updateUI();
 }
 
 void DrivingWidget::handleControllerEnableACK(std_msgs::BoolConstPtr msg) {

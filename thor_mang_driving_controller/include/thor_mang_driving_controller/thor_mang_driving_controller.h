@@ -8,6 +8,7 @@
 #include <sensor_msgs/JointState.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <thor_mang_driving_controller/DrivingCommand.h>
+#include <thor_mang_driving_controller/DrivingState.h>
 
 namespace thor_mang_driving_controller {
   
@@ -56,8 +57,7 @@ private:
   ros::Publisher head_cmd_pub_;
   ros::Publisher all_stop_enabled_pub_;
   ros::Publisher controller_enable_ack_pub_;
-  ros::Publisher absolute_steering_angle_pub_;
-  ros::Publisher connection_lost_pub_;
+  ros::Publisher driving_state_pub_;
 
   // steering command stuff
   thor_mang_driving_controller::DrivingCommand last_command_received_;

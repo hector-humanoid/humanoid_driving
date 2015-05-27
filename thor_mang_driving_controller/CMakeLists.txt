@@ -32,6 +32,7 @@ set(MSG_DEPS
 
 set(MSG_FILES
   DrivingCommand.msg
+  DrivingState.msg
 )
 
 add_message_files(DIRECTORY msg FILES ${MSG_FILES})

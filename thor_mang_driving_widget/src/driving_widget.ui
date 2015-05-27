@@ -32,9 +32,9 @@
      <height>0</height>
     </size>
    </property>
-   <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,1,0">
+   <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,1,0">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout">
+     <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0,0,0,0">
       <item>
        <widget class="QPushButton" name="pushButton_ShowCameraImage">
         <property name="text">
@@ -111,34 +111,6 @@ color:white;</string>
     </item>
     <item>
      <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0,3,1">
-      <item row="1" column="2">
-       <widget class="QSlider" name="slider_HeadPan">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="minimum">
-         <number>-157</number>
-        </property>
-        <property name="maximum">
-         <number>157</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="invertedAppearance">
-         <bool>true</bool>
-        </property>
-        <property name="tickPosition">
-         <enum>QSlider::NoTicks</enum>
-        </property>
-        <property name="tickInterval">
-         <number>500</number>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="3" rowspan="2">
-       <widget class="QGraphicsView" name="graphicsView_Wheels"/>
-      </item>
       <item row="2" column="1">
        <widget class="QSlider" name="slider_HeadTilt">
         <property name="enabled">
@@ -180,6 +152,31 @@ color:white;</string>
         </property>
        </widget>
       </item>
+      <item row="1" column="2">
+       <widget class="QSlider" name="slider_HeadPan">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="minimum">
+         <number>-157</number>
+        </property>
+        <property name="maximum">
+         <number>157</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="invertedAppearance">
+         <bool>true</bool>
+        </property>
+        <property name="tickPosition">
+         <enum>QSlider::NoTicks</enum>
+        </property>
+        <property name="tickInterval">
+         <number>500</number>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="2">
        <widget class="QLabel" name="label_Tick">
         <property name="minimumSize">
@@ -202,15 +199,48 @@ color:white;</string>
         </property>
        </widget>
       </item>
+      <item row="1" column="3" rowspan="2">
+       <widget class="QGraphicsView" name="graphicsView_Wheels"/>
+      </item>
       <item row="2" column="0">
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;br/&gt;&lt;br/&gt;&lt;br/&gt;&lt;br/&gt;&lt;br/&gt;&lt;br/&gt;&lt;br/&gt;-&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-        </property>
-       </widget>
+       <layout class="QVBoxLayout" name="verticalLayout_3" stretch="5,0,3">
+        <item>
+         <spacer name="verticalSpacer_6">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_HorizontalTick">
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;-&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTop|Qt::AlignTrailing</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_7">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>

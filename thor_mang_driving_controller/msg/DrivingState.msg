@@ -1,0 +1,2 @@
+float64 current_absolute_steering_angle
+bool connection_loss

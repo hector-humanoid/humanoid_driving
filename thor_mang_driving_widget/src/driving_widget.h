@@ -9,6 +9,7 @@
 #include <sensor_msgs/JointState.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <thor_mang_driving_controller/DrivingCommand.h>
+#include <thor_mang_driving_controller/DrivingState.h>
 
 #include <QMainWindow>
 #include <QBasicTimer>
@@ -35,7 +36,8 @@ class DrivingWidget : public QMainWindow
       BUTTON_STEERING_SENSITIVITY_MINUS,
       BUTTON_HEAD_SENSITIVITY_PLUS,
       BUTTON_HEAD_SENSITIVITY_MINUS,
-      BUTTON_HEAD_MODE_TO_DEFAULT,
+      BUTTON_HEAD_TO_DEFAULT,
+      BUTTON_STEERING_TO_DEFAULT,
       NUM_JOYPAD_IDS
     };
 
@@ -50,9 +52,7 @@ public:
     void handleAllStopEnabled(thor_mang_driving_controller::DrivingCommandConstPtr msg);
 
     void handleControllerEnableACK(std_msgs::BoolConstPtr msg);
-    void handleNewAbsoluteSteeringAngle(std_msgs::Float64ConstPtr msg);
-
-    void handleConnectionLoss(std_msgs::BoolConstPtr msg);
+    void handleNewDrivingState(thor_mang_driving_controller::DrivingStateConstPtr msg);
 
 protected:
     void timerEvent(QTimerEvent *event) override;
@@ -112,10 +112,9 @@ private:
     // Enable / Disable controller, Reset
     ros::Publisher controller_enable_pub_;
     ros::Subscriber controller_enable_ack_sub_;
-    ros::Publisher controller_reset_pub_;
 
     // Get absolute steering angle from robot
-    ros::Subscriber absolute_steering_angle_sub_;
+    ros::Subscriber driving_state_sub_;
 
     // Connection loss repaired?
     ros::Subscriber connection_loss_sub_;
@@ -155,6 +154,6 @@ private:
     // joypad ids
     int joypad_ids_[NUM_JOYPAD_IDS];
 
-    bool connection_lost_;
+    bool connection_loss_;
 };
 
