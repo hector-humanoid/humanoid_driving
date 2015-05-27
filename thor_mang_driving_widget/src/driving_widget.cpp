@@ -21,8 +21,9 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
 
     // Driving control elements
     all_stop_ = true;
-    steering_angle_ = 0.0;
-    absolute_steering_angle_ = 0.0;
+    current_steering_angle_ = 0.0;
+    current_absolute_steering_angle_ = 0.0;
+    absolute_target_steering_angle_ = 0.0;
     drive_forward_ = false;
 
     controller_enabled_ = false;
@@ -115,11 +116,11 @@ void DrivingWidget::resizeEvent(QResizeEvent *event) {
 }
 
 void DrivingWidget::updateUI(bool update_steering_sensitivity, bool update_head_sensitivity) {
-    double wheel_position = absolute_steering_angle_*45/540;
+    double wheel_position = current_absolute_steering_angle_*45/540;
 
     // update line edits and spin boxes
     ui_->lineEdit_WheelAngle->setText( QString("%1 \260").arg(wheel_position, 3, 'f', 1));
-    ui_->lineEdit_SteeringAngle->setText(QString("%1 \260").arg(absolute_steering_angle_, 3, 'f', 1));
+    ui_->lineEdit_SteeringAngle->setText(QString("%1 \260").arg(current_absolute_steering_angle_, 3, 'f', 1));
 
     if ( update_steering_sensitivity ) {
         ui_->spinBox_SteeringSensitivity->blockSignals(true);
@@ -136,21 +137,31 @@ void DrivingWidget::updateUI(bool update_steering_sensitivity, bool update_head_
     ui_->pushButton_AllStop->setChecked(all_stop_);
     ui_->label_DrivingActive->setVisible(drive_forward_);
 
-    // set dial => map to [-180; +180]
-    double limited_steering_angle = steering_angle_;
-    if ( limited_steering_angle >= 360.0 )  limited_steering_angle -= 360.0;
-    if ( limited_steering_angle <= -360.0 ) limited_steering_angle += 360.0;
+    // set current steering angle => map to [-180; +180]
+    double limited_steering_angle = current_steering_angle_;
+    while ( limited_steering_angle >= 360.0 )  limited_steering_angle -= 360.0;
+    while ( limited_steering_angle <= -360.0 ) limited_steering_angle += 360.0;
 
     if ( limited_steering_angle <= -180.0 ) limited_steering_angle += 360.0;
     if ( limited_steering_angle >= 180.0 )  limited_steering_angle -= 360.0;
 
-    ui_->dial_TargetSteeringPosition->setValue( (int)limited_steering_angle);
+    ui_->dial_CurrentSteeringPosition->setValue( (int)limited_steering_angle);
+
+    // set target steering angle => map to [-180; +180]
+    double limited_target_steering_angle = absolute_target_steering_angle_;
+    while ( limited_target_steering_angle >= 360.0 )  limited_target_steering_angle -= 360.0;
+    while ( limited_target_steering_angle <= -360.0 ) limited_target_steering_angle += 360.0;
+
+    if ( limited_target_steering_angle <= -180.0 ) limited_target_steering_angle += 360.0;
+    if ( limited_target_steering_angle >= 180.0 )  limited_target_steering_angle -= 360.0;
+
+    ui_->dial_TargetSteeringPosition->setValue( (int)limited_target_steering_angle);
 
     drawWheelVisualization();
 }
 
 void DrivingWidget::drawWheelVisualization() {
-    double wheel_angle = absolute_steering_angle_*45/540;
+    double wheel_angle = current_absolute_steering_angle_*45/540;
     double total_width = ui_->graphicsView_Wheels->visibleRegion().boundingRect().width();
     double total_height = ui_->graphicsView_Wheels->visibleRegion().boundingRect().height();
     double car_length = std::min(total_width, total_height)-120;
@@ -232,11 +243,15 @@ void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
 }
 
 void DrivingWidget::handleNewAbsoluteSteeringAngle(std_msgs::Float64ConstPtr msg) {
-    absolute_steering_angle_ = msg->data;
+    current_absolute_steering_angle_ = msg->data;
 
-    steering_angle_ = absolute_steering_angle_;
-    while ( steering_angle_ >= 360.0 )  steering_angle_ -= 360.0;
-    while ( steering_angle_ < 0 )       steering_angle_ += 360.0;
+    if ( all_stop_ ) {
+        absolute_target_steering_angle_ = current_absolute_steering_angle_;
+    }
+
+    current_steering_angle_ = current_absolute_steering_angle_;
+    while ( current_steering_angle_ >= 360.0 )  current_steering_angle_ -= 360.0;
+    while ( current_steering_angle_ < 0 )       current_steering_angle_ += 360.0;
 
     updateUI();
 }
@@ -347,6 +362,10 @@ void DrivingWidget::handleAllStopEnabled(thor_mang_driving_controller::DrivingCo
     all_stop_ = msg->all_stop;
     drive_forward_ = msg->drive_forward;
 
+    if ( all_stop_ ) {
+        absolute_target_steering_angle_ = current_absolute_steering_angle_;
+    }
+
     updateUI();
 }
 
@@ -372,9 +391,22 @@ void DrivingWidget::sendDrivingCommand() {
 
     checkSteeringLimits();
 
+    absolute_target_steering_angle_ += steering_speed_;
+    double actual_steering_speed = 0.0;
+    double speed_factor = std::min(1.0, 0.2*fabs(absolute_target_steering_angle_ - current_absolute_steering_angle_));
+    ROS_INFO("speed_factor = %f", speed_factor);
+    ROS_INFO("diff = %f", fabs(absolute_target_steering_angle_ - current_absolute_steering_angle_));
+    if ( absolute_target_steering_angle_ - current_absolute_steering_angle_ > 0.05 ) {
+        actual_steering_speed = steering_sensitivity_*speed_factor;
+    }
+    else if ( absolute_target_steering_angle_ - current_absolute_steering_angle_ < -0.05) {
+        actual_steering_speed = -steering_sensitivity_*speed_factor;
+    }
+
+
     thor_mang_driving_controller::DrivingCommand driving_command_msg;
     driving_command_msg.all_stop = all_stop_;
-    driving_command_msg.steering_angle_step = steering_speed_;
+    driving_command_msg.steering_angle_step = actual_steering_speed;
     driving_command_msg.drive_forward = drive_forward_;
     driving_command_msg.head_tilt_speed = head_tilt_speed_;
     driving_command_msg.head_pan_speed = head_pan_speed_;
@@ -400,8 +432,8 @@ void DrivingWidget::checkSteeringLimits() {
     }
 
     if (ignore_steering_limits_ == false ) {
-        if (absolute_steering_angle_ + steering_speed_ <= -540.0 ||
-            absolute_steering_angle_ + steering_speed_ >=  540.0 ) {
+        if (current_absolute_steering_angle_ + steering_speed_ <= -540.0 ||
+            current_absolute_steering_angle_ + steering_speed_ >=  540.0 ) {
             steering_speed_ = 0.0;
         }
     }
