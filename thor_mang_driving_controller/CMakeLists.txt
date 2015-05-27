@@ -69,3 +69,12 @@ add_dependencies(driving_controller thor_mang_driving_controller_generate_messag
  target_link_libraries(driving_controller
    ${catkin_LIBRARIES}
  )
+
+install ( DIRECTORY launch
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
+install ( DIRECTORY config
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
