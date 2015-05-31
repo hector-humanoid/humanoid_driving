@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   shape_msgs
   eigen_conversions
+  thor_mang_driving_controller
 )
 
 find_package(Eigen REQUIRED)

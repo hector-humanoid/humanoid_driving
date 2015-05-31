@@ -5,6 +5,9 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <std_msgs/Float64.h>
 
+//@TODO: Get rid of this again
+#include <thor_mang_driving_controller/DrivingState.h>
+
 #include <eigen_conversions/eigen_msg.h>
 
 class DrivingAidMarker
@@ -36,6 +39,7 @@ public:
     pnh.param("wheel_base", p_wheel_base_, 2.0);
     pnh.param("wheel_radius", p_wheel_radius_, 0.3);
     pnh.param("wheel_width", p_wheel_width_, 0.2);
+    pnh.param("preview_distance", p_preview_distance_, 60.0);
 
 
     //vehicle frame is between rear axles projected to ground
@@ -47,6 +51,8 @@ public:
     marker_pub_ = pnh.advertise<visualization_msgs::MarkerArray>("driving_aid", 1,false);
 
     steering_angle_sub_ = pnh.subscribe("steering_angle", 5, &DrivingAidMarker::steeringAngleCallback, this);
+
+    steering_state_sub_ = pnh.subscribe("/driving_controller/driving_state", 5, &DrivingAidMarker::steeringStateCallback, this);
 
     visualization_msgs::Marker marker;
     //marker.header.stamp = req.point.header.stamp;
@@ -114,6 +120,17 @@ public:
   void steeringAngleCallback(const std_msgs::Float64& steering_angle)
   {
     generateVisualizationMarker(steering_angle.data, marker_array_);
+
+    marker_pub_.publish(marker_array_);
+  }
+
+  void steeringStateCallback(const thor_mang_driving_controller::DrivingState& driving_state)
+  {
+    double wheel_steering_angle_deg = driving_state.current_absolute_steering_angle*45.0/540.0;
+
+    double wheel_steering_angle_rad = wheel_steering_angle_deg * (M_PI/180.0);
+
+    generateVisualizationMarker(wheel_steering_angle_rad, marker_array_);
 
     marker_pub_.publish(marker_array_);
   }
@@ -192,6 +209,14 @@ public:
 
     //std::cout << "rotation_vector:\n" << rotation_vector << "\n";
 
+    double turn_circle_circumference = std::abs(turn_radius * M_PI * 2.0);
+
+    double circle_portion_covered_by_preview_rad = p_preview_distance_ / turn_circle_circumference  ;
+
+    double circle_sample_step = circle_portion_covered_by_preview_rad / 40.0;
+
+
+
     for (size_t i = 0; i < 40; ++i)
     {
       Eigen::Affine3d o_t_i (Eigen::Affine3d::Identity());
@@ -201,7 +226,7 @@ public:
 
 
 
-      Eigen::Affine3d rotation_left (Eigen::AngleAxisd(static_cast<double>(i) * 0.05,
+      Eigen::Affine3d rotation_left (Eigen::AngleAxisd(static_cast<double>(i) * circle_sample_step,
                                      rotation_vector));
 
       //Eigen::Affine3d rotation_left (Eigen::AngleAxisd( static_cast<double>(i) * 0.05,
@@ -214,7 +239,7 @@ public:
       point_vector_left[i].x = tmp.x();
       point_vector_left[i].y = -tmp.y();
 
-      Eigen::Affine3d rotation_right (Eigen::AngleAxisd(static_cast<double>(i) * 0.05,
+      Eigen::Affine3d rotation_right (Eigen::AngleAxisd(static_cast<double>(i) * circle_sample_step,
                                       rotation_vector));
 
       //Eigen::Affine3d rotation_right (Eigen::AngleAxisd( static_cast<double>(i) * 0.05,
@@ -285,12 +310,14 @@ protected:
   double p_wheel_base_;
   double p_wheel_radius_;
   double p_wheel_width_;
+  double p_preview_distance_;
 
 
   std::string p_vehicle_frame_;
 
   ros::Publisher marker_pub_;
   ros::Subscriber steering_angle_sub_;
+  ros::Subscriber steering_state_sub_;
   ros::Timer pub_timer_;
 };
 
