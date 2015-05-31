@@ -170,7 +170,7 @@ public:
     marker_array.markers[1].id = 1;
 
     Eigen::Affine3d rot_left (Eigen::AngleAxisd(M_PI*0.5, Eigen::Vector3d::UnitX())*
-                               Eigen::AngleAxisd(steer_angle_left, Eigen::Vector3d::UnitY()));
+                              Eigen::AngleAxisd(steer_angle_left, Eigen::Vector3d::UnitY()));
 
     tf::quaternionEigenToMsg(Eigen::Quaterniond(rot_left.rotation()), marker_array_.markers[LEFT_FRONT_WHEEL].pose.orientation);
 
@@ -186,19 +186,21 @@ public:
 
     for (size_t i = 0; i < 20; ++i)
     {
-      Eigen::Affine2d o_t_i (Eigen::Affine2d::Identity());
-      o_t_i.translation() = icc;
+      Eigen::Affine3d o_t_i (Eigen::Affine3d::Identity());
+      o_t_i.translation() = Eigen::Vector3d(icc.x(), icc.y(), 0.0);
 
-      Eigen::Rotation2Dd rotation(steer_angle_left + static_cast<double>(i) * 0.05);
+      //Eigen::Rotation2Dd rotation(steer_angle_left + static_cast<double>(i) * 0.05);
+      Eigen::Affine3d rotation (Eigen::AngleAxisd(steer_angle_left + static_cast<double>(i) * 0.05,
+                                                  Eigen::Vector3d::UnitZ()));
 
       //Eigen::Vector2d tmp(o_t_i * rotation * left_wheel);
       //Eigen::Vector2d tmp(o_t_i * rotation * left_wheel).translation();
-      Eigen::Vector2d tmp(rotation*Eigen::Vector2d(0.0, turn_radius-p_wheel_track_*0.5));
+      Eigen::Vector3d tmp( rotation *Eigen::Vector3d(0.0, turn_radius-p_wheel_track_*0.5, 0.0));
 
       point_vector_left[i].x = tmp.x();
       point_vector_left[i].y = tmp.y();
 
-      tmp = rotation*Eigen::Vector2d(0.0, turn_radius+p_wheel_track_*0.5);
+      tmp = rotation*Eigen::Vector3d(0.0, turn_radius+p_wheel_track_*0.5, 0.0);
 
       point_vector_right[i].x = tmp.x();
       point_vector_right[i].y = tmp.y();
