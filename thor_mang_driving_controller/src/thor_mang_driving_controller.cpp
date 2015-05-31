@@ -22,6 +22,10 @@ DrivingController::DrivingController() :
     time_from_start_ = 0.1;
 
     current_absolute_steering_angle_ = 0.0;
+    current_head_tilt_ = 0.0;
+    current_head_pan_ = 0.0;
+
+    driving_counter_ = 0;
 
     received_robot_positions_ = false;
     received_first_command_msg_ = false;
@@ -87,8 +91,11 @@ void DrivingController::checkReceivedMessages() {
             thor_mang_driving_controller::DrivingState driving_state_msg;
             driving_state_msg.current_absolute_steering_angle = current_absolute_steering_angle_;
             driving_state_msg.connection_loss = connection_loss_;
+            driving_state_msg.current_head_tilt = current_head_tilt_;
+            driving_state_msg.current_head_pan = current_head_pan_;
+            driving_state_msg.driving_counter = driving_counter_;
             driving_state_pub_.publish(driving_state_msg);
-            ROS_WARN("[DrivingController] OCS connection timed out. Going to Stop.");
+            ROS_WARN("[DrivingController] OCS connection timed out. Going to Hold.");
             last_auto_stop_info_sent_time_ = ros::Time::now();
         }
     }
@@ -99,7 +106,7 @@ void DrivingController::checkReceivedMessages() {
 
 void DrivingController::handleDrivingCommand(thor_mang_driving_controller::DrivingCommandConstPtr msg) {
     if ( !received_robot_positions_ ) {
-        ROS_ERROR("No robot positions received => No Update");
+        ROS_ERROR("[DrivingController] No robot positions received => No Update");
         return;
     }
 
@@ -151,6 +158,9 @@ void DrivingController::updateHeadPosition() {
             }
         }
     }
+
+    current_head_pan_ = current_head_positions[0];
+    current_head_tilt_ = current_head_positions[1];
 
     double head_pan_speed = 0.0;
     double pan_factor = std::min(1.0, 0.4*fabs(last_command_received_.absolute_head_pan - current_head_positions[0]));
@@ -210,9 +220,15 @@ void DrivingController::updateSteering() {
     trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(interpolated_frame, steering_joint_names_);
     steering_control_cmd_pub_.publish(trajectory_msg);
 
+    if ( last_command_received_.drive_forward && !last_command_received_.all_stop )
+        driving_counter_++;
+
     thor_mang_driving_controller::DrivingState driving_state_msg;
     driving_state_msg.current_absolute_steering_angle = current_absolute_steering_angle_;
     driving_state_msg.connection_loss = connection_loss_;
+    driving_state_msg.current_head_tilt = current_head_tilt_;
+    driving_state_msg.current_head_pan = current_head_pan_;
+    driving_state_msg.driving_counter = driving_counter_;
     driving_state_pub_.publish(driving_state_msg);
 }
 

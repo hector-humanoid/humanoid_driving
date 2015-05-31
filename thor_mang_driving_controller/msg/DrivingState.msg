@@ -1,2 +1,5 @@
 float64 current_absolute_steering_angle
+float64 current_head_pan
+float64 current_head_tilt
+uint32 driving_counter
 bool connection_loss
