@@ -56,6 +56,7 @@ public:
 
 protected:
     void timerEvent(QTimerEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 public slots:
     void SLO_SteeringSensitivityConfirmed();
@@ -72,6 +73,7 @@ public slots:
 
 private:
     void sendDrivingCommand();
+    void sendHeadCommand();
     void checkSteeringLimits();
 
     void updateUI(bool update_steering_sensitivity = false, bool update_head_sensitivity = false);
@@ -80,6 +82,9 @@ private:
 
     void handleHeadCommand(double tilt, double pan);
     void handleSteeringCommand(double step);
+
+    trajectory_msgs::JointTrajectory generateTrajectoryMsg(std::vector<double> &joint_angles, std::vector<std::string> joint_names);
+
 
     ros::NodeHandle node_handle_;
     ros::NodeHandle node_handle_private_;
@@ -129,7 +134,6 @@ private:
     double current_absolute_steering_angle_;
     double absolute_target_steering_angle_;
     bool drive_forward_;
-    unsigned int driving_counter_;
     double time_from_start_;
 
     // Head control elements
@@ -137,8 +141,6 @@ private:
     double head_target_pan_;
     double head_tilt_speed_;
     double head_pan_speed_;
-    double current_head_pan_;
-    double current_head_tilt_;
 
     // allow sensitivity changes
     bool allow_head_sensitivity_change_;

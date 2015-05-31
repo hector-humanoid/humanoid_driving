@@ -31,8 +31,6 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     head_target_tilt_ = 0.0;
     head_tilt_speed_ = 0.0;
     head_pan_speed_ = 0.0;
-    current_head_pan_ = 0.0;
-    current_head_tilt_ = 0.0;
 
     connection_loss_ = false;
 
@@ -92,9 +90,10 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
 
     timer_.start(33, this);
 
-    // UI init    
-    updateUI(true, true);
+    // UI init
+    drawWheelVisualization();
     ui_->graphicsView_Wheels->setScene(&wheel_scene_);
+    updateUI(true, true);
 }
 
 DrivingWidget::~DrivingWidget()
@@ -106,7 +105,6 @@ DrivingWidget::~DrivingWidget()
 void DrivingWidget::timerEvent(QTimerEvent *event)
 {
     sendDrivingCommand();
-
     updateUI();
 
     // check if ros is still running; if not, just kill the application
@@ -116,6 +114,10 @@ void DrivingWidget::timerEvent(QTimerEvent *event)
     //Spin at beginning of Qt timer callback, so current ROS time is retrieved
     if(event->timerId() == timer_.timerId())
         ros::spinOnce();
+}
+
+void DrivingWidget::resizeEvent(QResizeEvent *event) {
+    drawWheelVisualization();
 }
 
 void DrivingWidget::updateUI(bool update_steering_sensitivity, bool update_head_sensitivity) {
@@ -138,12 +140,7 @@ void DrivingWidget::updateUI(bool update_steering_sensitivity, bool update_head_
     }
 
     ui_->pushButton_AllStop->setChecked(all_stop_);
-    if ( drive_forward_ )
-        ui_->label_DrivingActive->setStyleSheet("background-color:#00C000;color:#FFFFFF;");
-    else
-        ui_->label_DrivingActive->setStyleSheet("");
-
-    //ui_->label_DrivingActive->setVisible(drive_forward_);
+    ui_->label_DrivingActive->setVisible(drive_forward_);
 
     // set current steering angle => map to [-180; +180]
     double limited_steering_angle = current_steering_angle_;
@@ -169,18 +166,14 @@ void DrivingWidget::updateUI(bool update_steering_sensitivity, bool update_head_
 
     ui_->slider_HeadPan->setValue(head_target_pan_*100.0);
     ui_->slider_HeadTilt->setValue(head_target_tilt_*100.0);
-    ui_->slider_CurrentHeadPan->setValue(current_head_pan_*100.0);
-    ui_->slider_CurrentHeadTilt->setValue(current_head_tilt_*100.0);
-
-    ui_->lineEdit_DrivingCounter->setText(QString("%1").arg(driving_counter_));
 
 
 }
 
 void DrivingWidget::drawWheelVisualization() {
     double wheel_angle = current_absolute_steering_angle_*45/540;
-    double total_width = ui_->graphicsView_Wheels->width()-12;
-    double total_height = ui_->graphicsView_Wheels->height()-12;
+    double total_width = ui_->graphicsView_Wheels->visibleRegion().boundingRect().width();
+    double total_height = ui_->graphicsView_Wheels->visibleRegion().boundingRect().height();
     double car_length = std::min(total_width, total_height)-120;
     double car_width = car_length / 2.0;
     double wheel_width = car_width / 4.0;
@@ -189,7 +182,6 @@ void DrivingWidget::drawWheelVisualization() {
     QTransform base_wheel_transform(1.0, 0.0, 0.0, 1.0, -wheel_width/2.0, -wheel_length/2.0);
 
     wheel_scene_.clear();
-    wheel_scene_.setSceneRect(-total_width/2.0, -total_height/2.0, total_width, total_height);
     wheel_scene_.addRect(-car_width/2.0, -car_length/2.0, car_width, car_length );
 
     // back wheels
@@ -216,18 +208,38 @@ void DrivingWidget::drawWheelVisualization() {
     wheel = wheel_scene_.addRect(-wheel_width/2.0, -wheel_length/2.0, wheel_width, wheel_length, QPen(), QBrush(wheel_color, Qt::SolidPattern));
     wheel->setTransform(steering_transform*position_transform, true);
 
+    // show all stop
     // Draw all stop sign in img
+
     if ( all_stop_ ) {
+        /*
+        QPainter painter(&img); // sorry i forgot the "&"
+
+        painter.fillRect(70, 70, img.width()-140, img.height()-140, Qt::red);
+
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Arial", 48));
+        painter.drawText(img.rect(), Qt::AlignCenter, "All Stop!");*/
+
         QGraphicsRectItem *background_item = wheel_scene_.addRect(-car_width/2.0+0.3, 0.0-car_length/12.0, car_width-0.6, car_length/6.0, QPen(Qt::red), QBrush(Qt::red));
 
         QFont textFont;
         textFont.setBold(true);
         textFont.setPixelSize(background_item->boundingRect().height()-0.5);
-        QGraphicsTextItem *allStopTextItem = wheel_scene_.addText("Hold!", textFont);
+        QGraphicsTextItem *allStopTextItem = wheel_scene_.addText("Stop!", textFont);
         allStopTextItem->setDefaultTextColor(Qt::white);
         allStopTextItem->moveBy( -allStopTextItem->boundingRect().width()/2.0, -allStopTextItem->boundingRect().height()/2.0);
     }
     else if ( connection_loss_ ) {
+        /*
+        QPainter painter(&img); // sorry i forgot the "&"
+
+        painter.fillRect(70, 70, img.width()-140, img.height()-140, Qt::red);
+
+        painter.setPen(Qt::white);
+        painter.setFont(QFont("Arial", 48));
+        painter.drawText(img.rect(), Qt::AlignCenter, "All Stop!");*/
+
         QGraphicsRectItem *background_item = wheel_scene_.addRect(-car_width/2.0+0.3, 0.0-car_length/12.0, car_width-0.6, car_length/6.0, QPen(Qt::yellow), QBrush(Qt::yellow));
 
         QFont textFont;
@@ -265,14 +277,9 @@ void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
 void DrivingWidget::handleNewDrivingState(thor_mang_driving_controller::DrivingStateConstPtr msg) {
     current_absolute_steering_angle_ = msg->current_absolute_steering_angle;
     connection_loss_ = msg->connection_loss;
-    current_head_pan_ = msg->current_head_pan;
-    current_head_tilt_ = msg->current_head_tilt;
-    driving_counter_ = msg->driving_counter;
 
     if ( all_stop_ ) {
         absolute_target_steering_angle_ = current_absolute_steering_angle_;
-        head_target_pan_ = current_head_pan_;
-        head_target_tilt_ = current_head_tilt_;
     }
 
     current_steering_angle_ = current_absolute_steering_angle_;
@@ -394,8 +401,6 @@ void DrivingWidget::handleAllStopEnabled(thor_mang_driving_controller::DrivingCo
 
     if ( all_stop_ ) {
         absolute_target_steering_angle_ = current_absolute_steering_angle_;
-        head_target_pan_ = msg->absolute_head_pan;
-        head_target_tilt_ = msg->absolute_head_tilt;
     }
 }
 
@@ -466,4 +471,14 @@ void DrivingWidget::checkSteeringLimits() {
     }
 }
 
+trajectory_msgs::JointTrajectory DrivingWidget::generateTrajectoryMsg(std::vector<double> &joint_angles, std::vector<std::string> joint_names) {
+    trajectory_msgs::JointTrajectory trajectory_msg;
+    trajectory_msgs::JointTrajectoryPoint trajectory_point;
+    trajectory_point.positions = joint_angles;
+    trajectory_point.time_from_start = ros::Duration(0.1);
+    trajectory_msg.points.push_back(trajectory_point);
+    trajectory_msg.joint_names = joint_names;
+
+    return trajectory_msg;
+}
 

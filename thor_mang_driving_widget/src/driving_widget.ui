@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>866</width>
+    <width>843</width>
     <height>506</height>
    </rect>
   </property>
@@ -32,9 +32,9 @@
      <height>0</height>
     </size>
    </property>
-   <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,0,1,0">
+   <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,1,0">
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0,0">
+     <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0,0,0,0">
       <item>
        <widget class="QPushButton" name="pushButton_ShowCameraImage">
         <property name="text">
@@ -75,39 +75,46 @@
         </property>
        </spacer>
       </item>
+      <item>
+       <widget class="QLabel" name="label_DrivingActive">
+        <property name="styleSheet">
+         <string notr="true">background-color:green;
+color:white;</string>
+        </property>
+        <property name="text">
+         <string>Driving!</string>
+        </property>
+        <property name="margin">
+         <number>3</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pushButton_AllStop">
+        <property name="styleSheet">
+         <string notr="true">QPushButton::checked {
+	background-color:#FF0000;
+}</string>
+        </property>
+        <property name="text">
+         <string>ALL STOP!</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
     <item>
-     <widget class="Line" name="line">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0,0,3,1">
-      <item row="3" column="2">
+     <layout class="QGridLayout" name="gridLayout_2" columnstretch="0,0,3,1">
+      <item row="2" column="1">
        <widget class="QSlider" name="slider_HeadTilt">
         <property name="enabled">
          <bool>false</bool>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QSlider::groove:vertical {
-    border: 1px solid #999999;
-    width: 8px; /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #b1b1b1, stop:1 #c4c4c4);
-    margin:  0 2px;
-}
-
-QSlider::handle:vertical {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
-    border: 1px solid #5c5c5c;
-    height: 12px;
-    margin: 0 -2px; /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
-    border-radius: 3px;
-}
-
-</string>
         </property>
         <property name="minimum">
          <number>-132</number>
@@ -129,7 +136,7 @@ QSlider::handle:vertical {
         </property>
        </widget>
       </item>
-      <item row="3" column="3">
+      <item row="2" column="2">
        <widget class="QLabel" name="label_CameraImage">
         <property name="frameShape">
          <enum>QFrame::StyledPanel</enum>
@@ -145,26 +152,10 @@ QSlider::handle:vertical {
         </property>
        </widget>
       </item>
-      <item row="2" column="3">
+      <item row="1" column="2">
        <widget class="QSlider" name="slider_HeadPan">
         <property name="enabled">
          <bool>false</bool>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QSlider::groove:horizontal {
-    border: 1px solid #999999;
-    height: 8px; /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #b1b1b1, stop:1 #c4c4c4);
-    margin: 2px 0;
-}
-
-QSlider::handle:horizontal {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
-    border: 1px solid #5c5c5c;
-    width: 12px;
-    margin: -2px 0; /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
-    border-radius: 3px;
-}</string>
         </property>
         <property name="minimum">
          <number>-157</number>
@@ -186,7 +177,7 @@ QSlider::handle:horizontal {
         </property>
        </widget>
       </item>
-      <item row="0" column="3">
+      <item row="0" column="2">
        <widget class="QLabel" name="label_Tick">
         <property name="minimumSize">
          <size>
@@ -208,7 +199,10 @@ QSlider::handle:horizontal {
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
+      <item row="1" column="3" rowspan="2">
+       <widget class="QGraphicsView" name="graphicsView_Wheels"/>
+      </item>
+      <item row="2" column="0">
        <layout class="QVBoxLayout" name="verticalLayout_3" stretch="5,0,3">
         <item>
          <spacer name="verticalSpacer_6">
@@ -248,103 +242,30 @@ QSlider::handle:horizontal {
         </item>
        </layout>
       </item>
-      <item row="1" column="3">
-       <widget class="QSlider" name="slider_CurrentHeadPan">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QSlider::groove:horizontal {
-    border: 1px solid #009900;
-    height: 8px; /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1 stop:0 #008100, stop:1 #009400);
-    margin: 2px 0;
-}
-
-QSlider::handle:horizontal {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
-    border: 1px solid #5c5c5c;
-    width: 12px;
-    margin: -2px 0; /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
-    border-radius: 3px;
-}
-
-</string>
-        </property>
-        <property name="minimum">
-         <number>-157</number>
-        </property>
-        <property name="maximum">
-         <number>157</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="invertedAppearance">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="1">
-       <widget class="QSlider" name="slider_CurrentHeadTilt">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="styleSheet">
-         <string notr="true">QSlider::groove:vertical {
-    border: 1px solid #009900;
-    width: 8px; /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #008100, stop:1 #009400);
-    margin:  0 2px;
-}
-
-QSlider::handle:vertical {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
-    border: 1px solid #5c5c5c;
-    height: 12px;
-    margin: 0 -2px; /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
-    border-radius: 3px;
-}
-
-</string>
-        </property>
-        <property name="minimum">
-         <number>-132</number>
-        </property>
-        <property name="maximum">
-         <number>79</number>
-        </property>
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-        <property name="invertedAppearance">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="4" rowspan="3">
-       <widget class="QGraphicsView" name="graphicsView_Wheels"/>
-      </item>
      </layout>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0,0,1,0,0">
+     <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,1,0,3,0,0">
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1,0">
+       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,1,0">
+        <item>
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>1</width>
+            <height>3</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
         <item>
          <widget class="QLabel" name="label_CurrentSteeringPosition">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>27</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>27</height>
-           </size>
-          </property>
           <property name="text">
            <string>Current Position</string>
           </property>
@@ -416,21 +337,25 @@ QSlider::handle:vertical {
        </layout>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,1,0">
+       <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0,0,1,0">
+        <item>
+         <spacer name="verticalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeType">
+           <enum>QSizePolicy::Fixed</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>1</width>
+            <height>3</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
         <item>
          <widget class="QLabel" name="label_TargetSteeringPosition_2">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>27</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>27</height>
-           </size>
-          </property>
           <property name="text">
            <string>Target Position</string>
           </property>
@@ -502,73 +427,6 @@ QSlider::handle:vertical {
        </layout>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout_5" stretch="0,0,0,1">
-        <item>
-         <widget class="QLabel" name="label_DrivingActive">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>27</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>27</height>
-           </size>
-          </property>
-          <property name="styleSheet">
-           <string notr="true"/>
-          </property>
-          <property name="text">
-           <string>Driving!</string>
-          </property>
-          <property name="margin">
-           <number>3</number>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLineEdit" name="lineEdit_DrivingCounter">
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="pushButton_AllStop">
-          <property name="styleSheet">
-           <string notr="true">QPushButton::checked {
-	background-color:#FF0000;
-}</string>
-          </property>
-          <property name="text">
-           <string>ALL HOLD!</string>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <property name="checked">
-           <bool>false</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="verticalSpacer_9">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </item>
-      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -578,7 +436,7 @@ QSlider::handle:vertical {
         </property>
         <property name="sizeHint" stdset="0">
          <size>
-          <width>48</width>
+          <width>32</width>
           <height>20</height>
          </size>
         </property>
@@ -588,18 +446,6 @@ QSlider::handle:vertical {
        <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0">
         <item row="0" column="0">
          <widget class="QLabel" name="label_SteeringAngle">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>27</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>27</height>
-           </size>
-          </property>
           <property name="text">
            <string>Steering Angle:</string>
           </property>
