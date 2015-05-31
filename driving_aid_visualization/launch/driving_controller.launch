@@ -8,6 +8,8 @@
     <param name="wheel_width" value="0.27"/>
   </node>
   
+  <node name="ground_plane_mesh_provider_node" pkg="driving_aid_visualization" type="ground_plane_mesh_provider_node" output="screen"/>  
+  
   <node pkg="tf" type="static_transform_publisher" name="kinect_base_link5" args="-0.98 -0.40 -1.0 0 0 0 /pelvis /vehicle_frame 100"/>
  
 </launch>

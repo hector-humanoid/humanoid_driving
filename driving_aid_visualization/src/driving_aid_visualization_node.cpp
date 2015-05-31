@@ -55,7 +55,7 @@ public:
     marker.action = visualization_msgs::Marker::ADD;
     marker.color.r= 1.0;
     marker.color.a = 1.0;
-    marker.scale.x = 0.02;
+    marker.scale.x = p_wheel_width_;
     marker.ns ="wheel_footprint";
     marker.action = visualization_msgs::Marker::ADD;
     marker.pose.orientation.w = 1.0;
