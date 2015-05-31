@@ -89,6 +89,9 @@ private:
 
   // accumulate absolute steering angle
   double current_absolute_steering_angle_;
+  double current_head_tilt_;
+  double current_head_pan_;
+  unsigned int driving_counter_;
 
   double head_sensitivity_;
   double steering_sensitivity_;
