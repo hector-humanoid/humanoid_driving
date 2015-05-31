@@ -130,7 +130,7 @@ public:
   {
     double turn_radius = 0.0;
 
-    if (std::abs(steering_angle_rad) > 0.0001){
+    if (std::abs(steering_angle_rad) > 0.000001){
       // use cotangent
       //turn_radius = std::tan((M_PI*0.5 - steering_angle_rad) * p_wheel_base_);
       turn_radius = (1.0/std::tan(steering_angle_rad)) * p_wheel_base_;
@@ -194,11 +194,11 @@ public:
       //                                            Eigen::Vector3d::UnitZ()));
 
       Eigen::Affine3d rotation_left (Eigen::AngleAxisd( static_cast<double>(i) * 0.05,
-                                                  Eigen::Vector3d::UnitZ()));
+                                     (turn_radius > 0.0) ? -(Eigen::Vector3d::UnitZ()) : Eigen::Vector3d::UnitZ() ));
 
       //Eigen::Vector2d tmp(o_t_i * rotation * left_wheel);
       //Eigen::Vector2d tmp(o_t_i * rotation * left_wheel).translation();
-      Eigen::Vector3d tmp(o_t_i * rotation_left *Eigen::Vector3d(0.0, turn_radius-p_wheel_track_*0.5, 0.0));
+      Eigen::Vector3d tmp(o_t_i * rotation_left *Eigen::Vector3d(p_wheel_base_, (turn_radius)-p_wheel_track_*0.5, 0.0));
 
       point_vector_left[i].x = tmp.x();
       point_vector_left[i].y = -tmp.y();
@@ -207,9 +207,9 @@ public:
       //                                            Eigen::Vector3d::UnitZ()));
 
       Eigen::Affine3d rotation_right (Eigen::AngleAxisd( static_cast<double>(i) * 0.05,
-                                                  Eigen::Vector3d::UnitZ()));
+                                       (turn_radius > 0.0) ? -(Eigen::Vector3d::UnitZ()) : Eigen::Vector3d::UnitZ() ));
 
-      tmp = o_t_i * rotation_right*Eigen::Vector3d(0.0, turn_radius+p_wheel_track_*0.5, 0.0);
+      tmp = o_t_i * rotation_right*Eigen::Vector3d(p_wheel_base_, (turn_radius)+p_wheel_track_*0.5, 0.0);
 
       point_vector_right[i].x = tmp.x();
       point_vector_right[i].y = -tmp.y();
