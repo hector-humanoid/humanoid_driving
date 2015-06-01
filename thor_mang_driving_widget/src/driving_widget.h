@@ -114,6 +114,9 @@ private:
     // Connection loss repaired?
     ros::Subscriber connection_loss_sub_;
 
+    // Publish wheel angle for visualization
+    ros::Publisher wheel_angle_pub_;
+
     // Steering parameters
     double steering_sensitivity_;
     double steering_speed_;

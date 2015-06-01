@@ -80,6 +80,9 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     // Get absolute steering angle from controller
     driving_state_sub_ = node_handle_.subscribe("driving_controller/driving_state", 1, &DrivingWidget::handleNewDrivingState, this);
 
+    // Publish wheel angle
+    wheel_angle_pub_ = node_handle_.advertise<std_msgs::Float64>("driving_widget/wheel_angle_rad", 1, true);
+
     // setup user interface
     connect(ui_->pushButton_ConfirmSteeringSensitivity, SIGNAL(clicked()), this, SLOT(SLO_SteeringSensitivityConfirmed()));
     connect(ui_->spinBox_SteeringSensitivity, SIGNAL(valueChanged(double)), this, SLOT(SLO_SteeringSensitivityChanged()));
@@ -278,6 +281,12 @@ void DrivingWidget::handleNewDrivingState(thor_mang_driving_controller::DrivingS
     current_steering_angle_ = current_absolute_steering_angle_;
     while ( current_steering_angle_ >= 360.0 )  current_steering_angle_ -= 360.0;
     while ( current_steering_angle_ < 0 )       current_steering_angle_ += 360.0;
+
+    // Publish wheel angle in rad
+    double wheel_angle_rad = current_absolute_steering_angle_*(2.0*M_PI)*90.0/(540.0*360.0);
+    std_msgs::Float64 wheel_angle_msg;
+    wheel_angle_msg.data = -wheel_angle_rad;
+    wheel_angle_pub_.publish(wheel_angle_msg);
 }
 
 void DrivingWidget::SLO_SteeringSensitivityChanged() {
