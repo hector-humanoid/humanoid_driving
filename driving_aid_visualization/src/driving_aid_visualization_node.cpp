@@ -155,8 +155,8 @@ public:
       steer_angle_right = -steer_angle_right;
     }
 
-    ROS_INFO("turn radius: %f dist left: %f right: %f", turn_radius, dist_left, dist_right);
-    ROS_INFO("steer angle left: %f right: %f", steer_angle_left, steer_angle_right);
+    ROS_DEBUG("turn radius: %f dist left: %f right: %f", turn_radius, dist_left, dist_right);
+    ROS_DEBUG("steer angle left: %f right: %f", steer_angle_left, steer_angle_right);
 
     marker_array.markers[0].points.resize(40);
     marker_array.markers[1].points.resize(40);
