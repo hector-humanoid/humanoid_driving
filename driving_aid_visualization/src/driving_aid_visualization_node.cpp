@@ -126,11 +126,11 @@ public:
 
   void steeringStateCallback(const thor_mang_driving_controller::DrivingState& driving_state)
   {
-    double wheel_steering_angle_deg = driving_state.current_absolute_steering_angle*45.0/540.0;
+    double wheel_steering_angle_deg = driving_state.current_absolute_steering_angle*30.0/540.0;
 
     double wheel_steering_angle_rad = wheel_steering_angle_deg * (M_PI/180.0);
 
-    generateVisualizationMarker(wheel_steering_angle_rad, marker_array_);
+    generateVisualizationMarker(-wheel_steering_angle_rad, marker_array_);
 
     marker_pub_.publish(marker_array_);
   }
@@ -215,7 +215,7 @@ public:
 
     double circle_sample_step = circle_portion_covered_by_preview_rad / 40.0;
 
-
+    ROS_INFO("Turn radius left: %f right: %f",(turn_radius)-p_wheel_track_*0.5, (turn_radius)+p_wheel_track_*0.5);
 
     for (size_t i = 0; i < 40; ++i)
     {
