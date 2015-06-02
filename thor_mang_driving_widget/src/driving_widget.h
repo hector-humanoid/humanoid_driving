@@ -9,6 +9,7 @@
 #include <sensor_msgs/JointState.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <thor_mang_driving_controller/DrivingCommand.h>
+#include <thor_mang_driving_controller/DrivingState.h>
 
 #include <QMainWindow>
 #include <QBasicTimer>
@@ -27,13 +28,16 @@ class DrivingWidget : public QMainWindow
       AXIS_STEERING=0,
       AXIS_HEAD_PAN,
       AXIS_HEAD_TILT,
+      AXIS_HEAD_PAN_2,
+      AXIS_HEAD_TILT_2,
       BUTTON_FORWARD,
       BUTTON_ALL_STOP,
       BUTTON_STEERING_SENSITIVITY_PLUS,
       BUTTON_STEERING_SENSITIVITY_MINUS,
       BUTTON_HEAD_SENSITIVITY_PLUS,
       BUTTON_HEAD_SENSITIVITY_MINUS,
-      BUTTON_HEAD_MODE_TO_DEFAULT,
+      BUTTON_HEAD_TO_DEFAULT,
+      BUTTON_STEERING_TO_DEFAULT,
       NUM_JOYPAD_IDS
     };
 
@@ -48,11 +52,10 @@ public:
     void handleAllStopEnabled(thor_mang_driving_controller::DrivingCommandConstPtr msg);
 
     void handleControllerEnableACK(std_msgs::BoolConstPtr msg);
-    void handleNewAbsoluteSteeringAngle(std_msgs::Float64ConstPtr msg);
+    void handleNewDrivingState(thor_mang_driving_controller::DrivingStateConstPtr msg);
 
 protected:
     void timerEvent(QTimerEvent *event) override;
-    void resizeEvent(QResizeEvent *event) override;
 
 public slots:
     void SLO_SteeringSensitivityConfirmed();
@@ -65,12 +68,10 @@ public slots:
     void SLO_AllStopButtonChecked(bool active);
     void SLO_ToggleDrivingMode();
 
-    void SLO_Reset();
-    void SLO_OverrideLimits();
+    void SLO_OverrideLimits(bool override);
 
 private:
     void sendDrivingCommand();
-    void sendHeadCommand();
     void checkSteeringLimits();
 
     void updateUI(bool update_steering_sensitivity = false, bool update_head_sensitivity = false);
@@ -79,9 +80,6 @@ private:
 
     void handleHeadCommand(double tilt, double pan);
     void handleSteeringCommand(double step);
-
-    trajectory_msgs::JointTrajectory generateTrajectoryMsg(std::vector<double> &joint_angles, std::vector<std::string> joint_names);
-
 
     ros::NodeHandle node_handle_;
     ros::NodeHandle node_handle_private_;
@@ -109,10 +107,15 @@ private:
     // Enable / Disable controller, Reset
     ros::Publisher controller_enable_pub_;
     ros::Subscriber controller_enable_ack_sub_;
-    ros::Publisher controller_reset_pub_;
 
     // Get absolute steering angle from robot
-    ros::Subscriber absolute_steering_angle_sub_;
+    ros::Subscriber driving_state_sub_;
+
+    // Connection loss repaired?
+    ros::Subscriber connection_loss_sub_;
+
+    // Publish wheel angle for visualization
+    ros::Publisher wheel_angle_pub_;
 
     // Steering parameters
     double steering_sensitivity_;
@@ -125,14 +128,20 @@ private:
 
     // Driving control elements
     bool all_stop_;
-    double steering_angle_;
-    double absolute_steering_angle_;
+    double current_steering_angle_;
+    double current_absolute_steering_angle_;
+    double absolute_target_steering_angle_;
     bool drive_forward_;
+    unsigned int driving_counter_;
     double time_from_start_;
 
     // Head control elements
+    double head_target_tilt_;
+    double head_target_pan_;
     double head_tilt_speed_;
     double head_pan_speed_;
+    double current_head_pan_;
+    double current_head_tilt_;
 
     // allow sensitivity changes
     bool allow_head_sensitivity_change_;
@@ -145,5 +154,7 @@ private:
 
     // joypad ids
     int joypad_ids_[NUM_JOYPAD_IDS];
+
+    bool connection_loss_;
 };
 

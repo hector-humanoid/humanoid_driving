@@ -9,12 +9,23 @@ DrivingController::DrivingController() :
 {
     initKeyFrames();
 
-    last_command_received_.all_stop = true;
-    last_command_received_.steering_angle_step = 0.0;
-    last_command_received_.drive_forward = false;
-    time_from_start_ = 5.0; // 5s for initial starting position
+    connection_loss_ = false;
 
-    absolute_steering_angle_ = 0.0;
+    head_sensitivity_ = 2.5;
+    steering_sensitivity_ = 2.5;
+
+    last_command_received_.all_stop = true;
+    last_command_received_.absolute_target_steering_angle = 0.0;
+    last_command_received_.drive_forward = false;
+    last_command_received_.absolute_head_tilt = 0.0;
+    last_command_received_.absolute_head_pan = 0.0;
+    time_from_start_ = 0.1;
+
+    current_absolute_steering_angle_ = 0.0;
+    current_head_tilt_ = 0.0;
+    current_head_pan_ = 0.0;
+
+    driving_counter_ = 0;
 
     received_robot_positions_ = false;
     received_first_command_msg_ = false;
@@ -22,11 +33,6 @@ DrivingController::DrivingController() :
     last_auto_stop_info_sent_time_ = ros::Time::now();
 
     controller_enabled_ = false;
-
-    // Head control elements
-    move_head_to_default_ = false;
-    private_node_handle_.getParam("head_joint_names", head_joint_names_);
-    private_node_handle_.getParam("head_default_position", head_default_position_);
 
     // Setup head control publisher
     std::string head_controller_topic;
@@ -46,11 +52,10 @@ DrivingController::DrivingController() :
     all_stop_enabled_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingCommand>("driving_controller/all_stop", 1, false);
 
     // publish absolute steering angle
-    absolute_steering_angle_pub_ = node_handle_.advertise<std_msgs::Float64>("driving_controller/absolute_steering_angle", 1, true);
+    driving_state_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingState>("driving_controller/driving_state", 1, true);
 
     // steering command subscriber
     driving_command_sub_ = node_handle_.subscribe("driving_controller/driving_command", 1, &DrivingController::handleDrivingCommand, this);
-    move_head_to_default_sub_ = node_handle_.subscribe("driving_controller/move_head_to_default", 1, &DrivingController::handleMoveHeadToDefault, this);
 
     // robot state subscriber
     std::string joint_state_topic;
@@ -60,8 +65,6 @@ DrivingController::DrivingController() :
     // shutdown subscriber
     controller_enable_sub_ = node_handle_.subscribe("driving_controller/controller_enable", 1, &DrivingController::handleControllerEnable, this);
     controller_enable_ack_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/controller_enable_ack", 1, false);
-    controller_reset_sub_ = node_handle_.subscribe("driving_controller/controller_reset", 1, &DrivingController::handleControllerReset, this);
-
 }
 
 DrivingController::~DrivingController() {
@@ -75,25 +78,35 @@ void DrivingController::checkReceivedMessages() {
 
     ros::Duration time_since_last_msg = ros::Time::now() - last_command_received_time_;
     if ( time_since_last_msg >= ros::Duration(1.0)) { // OCS not alive? Go to "all stop"
-        last_command_received_.all_stop = true;
-        allStop();
+        //last_command_received_.all_stop = true;
+        last_command_received_.drive_forward = false;
+        updateDriveForward(false);
+
+        connection_loss_ = true;
 
         // inform OCS of current state (once a second)
         if ( ros::Time::now() - last_auto_stop_info_sent_time_ >= ros::Duration(1.0) ) {
             all_stop_enabled_pub_.publish(last_command_received_);
 
-            std_msgs::Float64 absolute_steering_angle_msg;
-            absolute_steering_angle_msg.data = absolute_steering_angle_;
-            absolute_steering_angle_pub_.publish(absolute_steering_angle_msg);
-            ROS_WARN("[DrivingController] OCS connection timed out. Going to All-Stop.");
+            thor_mang_driving_controller::DrivingState driving_state_msg;
+            driving_state_msg.current_absolute_steering_angle = current_absolute_steering_angle_;
+            driving_state_msg.connection_loss = connection_loss_;
+            driving_state_msg.current_head_tilt = current_head_tilt_;
+            driving_state_msg.current_head_pan = current_head_pan_;
+            driving_state_msg.driving_counter = driving_counter_;
+            driving_state_pub_.publish(driving_state_msg);
+            ROS_WARN("[DrivingController] OCS connection timed out. Going to Hold.");
             last_auto_stop_info_sent_time_ = ros::Time::now();
         }
+    }
+    else {
+        connection_loss_ = false;
     }
 }
 
 void DrivingController::handleDrivingCommand(thor_mang_driving_controller::DrivingCommandConstPtr msg) {
     if ( !received_robot_positions_ ) {
-        ROS_ERROR("No robot positions received => No Update");
+        ROS_ERROR("[DrivingController] No robot positions received => No Update");
         return;
     }
 
@@ -109,7 +122,7 @@ void DrivingController::handleDrivingCommand(thor_mang_driving_controller::Drivi
     }
     else {
         //updateSteering();
-        updateHeadPosition();
+        //updateHeadPosition();
         updateDriveForward(msg->drive_forward);
     }
 
@@ -127,68 +140,51 @@ void DrivingController::handleControllerEnable(std_msgs::BoolConstPtr msg) {
         ROS_INFO("[DrivingController] Controller disabled.");
 }
 
-void DrivingController::handleControllerReset(std_msgs::EmptyConstPtr msg) {
-    last_command_received_.steering_angle_step = 0.0;
-    last_command_received_.drive_forward = false;
-
-    while ( absolute_steering_angle_ >= 360.0 )  absolute_steering_angle_ -= 360.0;
-    while ( absolute_steering_angle_ < 0 ) absolute_steering_angle_ += 360.0;
-}
-
-void DrivingController::handleMoveHeadToDefault(std_msgs::EmptyConstPtr msg) {
-    move_head_to_default_ = true;
-}
-
 void DrivingController::updateHeadPosition() {
     if ( !controller_enabled_ || last_command_received_.all_stop) {
         return;
     }
 
     // get current angles and add control offset
-    std::vector<double> target_head_positions( head_joint_names_.size() );
 
-    for ( int i = 0; i < head_joint_names_.size(); i++ ) {
+    std::vector<std::string> head_joint_names = {"head_pan", "head_tilt"};
+    std::vector<double> current_head_positions(head_joint_names.size());
+
+    for ( int i = 0; i < head_joint_names.size(); i++ ) {
         for ( int j = 0; j < robot_joint_names_.size(); j++ ) {
-            if ( head_joint_names_[i] == robot_joint_names_[j] ) {
-                target_head_positions[i] = robot_joint_positions_[j];
+            if ( head_joint_names[i] == robot_joint_names_[j] ) {
+                current_head_positions[i] = robot_joint_positions_[j];
                 break;
             }
         }
     }
 
-    if ( move_head_to_default_ ) {
-        bool reached_position = true;
-        for ( int i = 0; i < target_head_positions.size(); i++ ) {
-            if ( std::abs(target_head_positions[i] - head_default_position_[i]) > 0.1 ) {
-                reached_position = false;
-                break;
-            }
-        }
+    current_head_pan_ = current_head_positions[0];
+    current_head_tilt_ = current_head_positions[1];
 
-        target_head_positions = head_default_position_;
-        move_head_to_default_ = !reached_position;
+    double head_pan_speed = 0.0;
+    double pan_factor = std::min(1.0, 0.4*fabs(last_command_received_.absolute_head_pan - current_head_positions[0]));
+    if ( last_command_received_.absolute_head_pan >= current_head_positions[0] ) {
+        head_pan_speed = pan_factor * head_sensitivity_;
     }
     else {
-        if ( head_joint_names_.size() >= 1 ) {
-            if ( head_joint_names_[0].find("pan") != std::string::npos )
-                target_head_positions[0] += last_command_received_.head_pan_speed;
-
-            if ( head_joint_names_[0].find("tilt") != std::string::npos )
-                target_head_positions[0] += last_command_received_.head_tilt_speed;
-        }
-
-        if ( head_joint_names_.size() >= 1 ) {
-            if ( head_joint_names_[1].find("pan") != std::string::npos )
-                target_head_positions[1] += last_command_received_.head_pan_speed;
-
-            if ( head_joint_names_[1].find("tilt") != std::string::npos )
-                target_head_positions[1] += last_command_received_.head_tilt_speed;
-        }
+        head_pan_speed = -pan_factor * head_sensitivity_;
     }
 
-    trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(target_head_positions, head_joint_names_);
-    if(move_head_to_default_)
-        trajectory_msg.points[0].time_from_start = ros::Duration(1.0);
+    double head_tilt_speed = 0.0;
+    double tilt_factor = std::min(1.0, 0.4*fabs(last_command_received_.absolute_head_tilt - current_head_positions[1]));
+    if ( last_command_received_.absolute_head_tilt >= current_head_positions[1] ) {
+        head_tilt_speed = tilt_factor * head_sensitivity_;
+    }
+    else {
+        head_tilt_speed = -tilt_factor * head_sensitivity_;
+    }
+
+    std::vector<double> target_head_positions = current_head_positions;
+    target_head_positions[0] += head_pan_speed;
+    target_head_positions[1] += head_tilt_speed;
+
+    trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(target_head_positions, head_joint_names);
 
     head_cmd_pub_.publish(trajectory_msg);
 }
@@ -199,17 +195,22 @@ void DrivingController::updateSteering() {
         return;
     }
 
-    //  ros::Duration diff = ros::Time::now() - last_steering_update_;
-    //  double current_step = diff.toSec() * last_command_received_.steering_angle_step;
-    double current_step = last_command_received_.steering_angle_step;
+    double steering_speed = 0.0;
 
-    absolute_steering_angle_ += current_step;
-    if ( last_command_received_.ignore_steering_limits == false && absolute_steering_angle_ >= 538.0 )
-      absolute_steering_angle_ = 538.0;
-    else if ( last_command_received_.ignore_steering_limits == false && absolute_steering_angle_ <= -538.0 )
-      absolute_steering_angle_ = -538.0;
+    double speed_factor = std::min(1.0, 0.5*fabs(last_command_received_.absolute_target_steering_angle - current_absolute_steering_angle_));
+    if ( last_command_received_.absolute_target_steering_angle - current_absolute_steering_angle_ > 0.05 ) {
+        steering_speed = steering_sensitivity_*speed_factor;
+    }
+    else if ( last_command_received_.absolute_target_steering_angle - current_absolute_steering_angle_ < -0.05) {
+        steering_speed = -steering_sensitivity_*speed_factor;
+    }
 
-    double target_angle = absolute_steering_angle_;    
+    double target_angle = current_absolute_steering_angle_ + steering_speed;
+    current_absolute_steering_angle_ = target_angle;
+
+    //ROS_INFO("absolute_target_steering_angle = %f", last_command_received_.absolute_target_steering_angle);
+    //ROS_INFO("current_absolute_steering_angle = %f", current_absolute_steering_angle_);
+
 
     // map to range [0,360]
     while ( target_angle >= 360.0 )  target_angle -= 360.0;
@@ -219,9 +220,16 @@ void DrivingController::updateSteering() {
     trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(interpolated_frame, steering_joint_names_);
     steering_control_cmd_pub_.publish(trajectory_msg);
 
-    std_msgs::Float64 absolute_steering_angle_msg;
-    absolute_steering_angle_msg.data = absolute_steering_angle_;
-    absolute_steering_angle_pub_.publish(absolute_steering_angle_msg);
+    if ( last_command_received_.drive_forward && !last_command_received_.all_stop )
+        driving_counter_++;
+
+    thor_mang_driving_controller::DrivingState driving_state_msg;
+    driving_state_msg.current_absolute_steering_angle = current_absolute_steering_angle_;
+    driving_state_msg.connection_loss = connection_loss_;
+    driving_state_msg.current_head_tilt = current_head_tilt_;
+    driving_state_msg.current_head_pan = current_head_pan_;
+    driving_state_msg.driving_counter = driving_counter_;
+    driving_state_pub_.publish(driving_state_msg);
 }
 
 void DrivingController::initKeyFrames() {

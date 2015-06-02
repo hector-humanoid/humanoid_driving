@@ -5,11 +5,8 @@ bool all_stop
 bool drive_forward
 
 # Change steering angle by x
-float64 steering_angle_step
+float64 absolute_target_steering_angle
 
 # Head tilt and pan speeds
-float64 head_pan_speed
-float64 head_tilt_speed
-
-# Ignore steering limits
-bool ignore_steering_limits
+float64 absolute_head_pan
+float64 absolute_head_tilt
