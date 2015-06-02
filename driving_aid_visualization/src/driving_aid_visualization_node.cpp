@@ -55,7 +55,7 @@ public:
     marker.action = visualization_msgs::Marker::ADD;
     marker.color.r= 1.0;
     marker.color.a = 1.0;
-    marker.scale.x = 0.02;
+    marker.scale.x = p_wheel_width_;
     marker.ns ="wheel_footprint";
     marker.action = visualization_msgs::Marker::ADD;
     marker.pose.orientation.w = 1.0;
@@ -155,8 +155,8 @@ public:
       steer_angle_right = -steer_angle_right;
     }
 
-    ROS_INFO("turn radius: %f dist left: %f right: %f", turn_radius, dist_left, dist_right);
-    ROS_INFO("steer angle left: %f right: %f", steer_angle_left, steer_angle_right);
+    ROS_DEBUG("turn radius: %f dist left: %f right: %f", turn_radius, dist_left, dist_right);
+    ROS_DEBUG("steer angle left: %f right: %f", steer_angle_left, steer_angle_right);
 
     marker_array.markers[0].points.resize(40);
     marker_array.markers[1].points.resize(40);
@@ -184,17 +184,28 @@ public:
     //marker_array_.markers[RIGHT_FRONT_WHEEL].pose.orientation; // = marker;
 
 
+    Eigen::Vector3d rotation_vector( Eigen::Vector3d::UnitZ() );
+
+    if (turn_radius > 0.0){
+      rotation_vector = -rotation_vector;
+    }
+
+    //std::cout << "rotation_vector:\n" << rotation_vector << "\n";
+
     for (size_t i = 0; i < 40; ++i)
     {
       Eigen::Affine3d o_t_i (Eigen::Affine3d::Identity());
       o_t_i.translation() = Eigen::Vector3d(icc.x(), -icc.y(), 0.0);
 
       //Eigen::Rotation2Dd rotation(steer_angle_left + static_cast<double>(i) * 0.05);
-      //Eigen::Affine3d rotation_left (Eigen::AngleAxisd(-steer_angle_left + static_cast<double>(i) * 0.05,
-      //                                            Eigen::Vector3d::UnitZ()));
 
-      Eigen::Affine3d rotation_left (Eigen::AngleAxisd( static_cast<double>(i) * 0.05,
-                                     (turn_radius > 0.0) ? -(Eigen::Vector3d::UnitZ()) : Eigen::Vector3d::UnitZ() ));
+
+
+      Eigen::Affine3d rotation_left (Eigen::AngleAxisd(static_cast<double>(i) * 0.05,
+                                     rotation_vector));
+
+      //Eigen::Affine3d rotation_left (Eigen::AngleAxisd( static_cast<double>(i) * 0.05,
+//                                     (turn_radius > 0.0) ? -(Eigen::Vector3d::UnitZ()) : Eigen::Vector3d::UnitZ() ));
 
       //Eigen::Vector2d tmp(o_t_i * rotation * left_wheel);
       //Eigen::Vector2d tmp(o_t_i * rotation * left_wheel).translation();
@@ -203,11 +214,11 @@ public:
       point_vector_left[i].x = tmp.x();
       point_vector_left[i].y = -tmp.y();
 
-      //Eigen::Affine3d rotation_right (Eigen::AngleAxisd(-steer_angle_right + static_cast<double>(i) * 0.05,
-      //                                            Eigen::Vector3d::UnitZ()));
+      Eigen::Affine3d rotation_right (Eigen::AngleAxisd(static_cast<double>(i) * 0.05,
+                                      rotation_vector));
 
-      Eigen::Affine3d rotation_right (Eigen::AngleAxisd( static_cast<double>(i) * 0.05,
-                                       (turn_radius > 0.0) ? -(Eigen::Vector3d::UnitZ()) : Eigen::Vector3d::UnitZ() ));
+      //Eigen::Affine3d rotation_right (Eigen::AngleAxisd( static_cast<double>(i) * 0.05,
+      //                                 (turn_radius > 0.0) ? -(Eigen::Vector3d::UnitZ()) : Eigen::Vector3d::UnitZ() ));
 
       tmp = o_t_i * rotation_right*Eigen::Vector3d(p_wheel_base_, (turn_radius)+p_wheel_track_*0.5, 0.0);
 
