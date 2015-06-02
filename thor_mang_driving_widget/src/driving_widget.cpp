@@ -283,7 +283,14 @@ void DrivingWidget::handleNewDrivingState(thor_mang_driving_controller::DrivingS
     while ( current_steering_angle_ < 0 )       current_steering_angle_ += 360.0;
 
     // Publish wheel angle in rad
-    double wheel_angle_rad = current_absolute_steering_angle_*(2.0*M_PI)*90.0/(540.0*360.0);
+    // Changed to be consistent with hand tuning for driving aid markers by SK,
+    // see https://github.com/thor-mang/thor_mang_driving/commit/17bbb47feb74fa88ad3699d9252783e41b84c871
+    //double wheel_angle_rad = current_absolute_steering_angle_*(2.0*M_PI)*90.0/(540.0*360.0);
+
+    double wheel_angle_deg = current_absolute_steering_angle_*30.0/540.0;
+
+    double wheel_angle_rad = wheel_angle_deg * (M_PI/180.0);
+
     std_msgs::Float64 wheel_angle_msg;
     wheel_angle_msg.data = -wheel_angle_rad;
     wheel_angle_pub_.publish(wheel_angle_msg);
