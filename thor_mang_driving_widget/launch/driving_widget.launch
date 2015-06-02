@@ -8,4 +8,7 @@
     <rosparam param="camera_topic">/multisense/left/image_rect_color</rosparam>
     <rosparam file="$(find thor_mang_driving_widget)/config/logitech_joypad.yaml"/>
   </node>
+  
+  <include file = "$(find driving_aid_visualization)/launch/polaris_drive_aid.launch" />
+    
 </launch>
