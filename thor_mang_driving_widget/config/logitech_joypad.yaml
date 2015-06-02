@@ -2,6 +2,8 @@
 joypad_axis_steering: 0
 joypad_axis_head_pan: 2
 joypad_axis_head_tilt: 3
+joypad_axis_head_pan_2: 4
+joypad_axis_head_tilt_2: 5
 
 # button ids
 joypad_button_forward: 1
@@ -10,7 +12,8 @@ joypad_button_steering_sensitivity_plus: 7
 joypad_button_steering_sensitivity_minus: 6
 joypad_button_head_sensitivity_plus: 5
 joypad_button_head_sensitivity_minus: 4
-joypad_button_mode_to_default: 11
+joypad_button_head_to_default: 11
+joypad_button_steering_to_defaut: 10
 
 # correction factors for axis (-1: invert direction)
 steering_correction_factor: -1.0
