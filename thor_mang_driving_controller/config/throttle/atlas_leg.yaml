@@ -2,6 +2,9 @@ forward_position:
 - -1.4
 - 1.2
 - 0.3
+- 0.0
+- 0.0
+- 0.0
 leg_joints:
 - l_leg_hpz
 - l_leg_hpx
@@ -13,11 +16,20 @@ safety_position:
 - -1.6
 - 1.4
 - 0.0
+- 0.0
+- 0.0
+- 0.0
 speed_control_joints:
 - l_leg_hpy
 - l_leg_kny
 - l_leg_aky
+- l_leg_hpz
+- l_leg_hpx
+- l_leg_akx
 stop_position:
 - -1.5
 - 1.4
+- 0.0
+- 0.0
+- 0.0
 - 0.0
