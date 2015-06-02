@@ -67,6 +67,7 @@ private:
   // joint names used for the target poses
   std::vector<std::string> steering_joint_names_;
   std::vector<std::string> leg_joint_names_;
+  std::vector<std::string> head_joint_names_;
   std::vector<std::string> speed_control_joint_names_;
 
   // target joint positions

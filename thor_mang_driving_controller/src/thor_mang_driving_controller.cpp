@@ -140,12 +140,12 @@ void DrivingController::updateHeadPosition() {
 
     // get current angles and add control offset
 
-    std::vector<std::string> head_joint_names = {"head_pan", "head_tilt"};
-    std::vector<double> current_head_positions(head_joint_names.size());
+    //std::vector<std::string> head_joint_names_ = {"head_pan", "head_tilt"};
+    std::vector<double> current_head_positions(head_joint_names_.size());
 
-    for ( int i = 0; i < head_joint_names.size(); i++ ) {
+    for ( int i = 0; i < head_joint_names_.size(); i++ ) {
         for ( int j = 0; j < robot_joint_names_.size(); j++ ) {
-            if ( head_joint_names[i] == robot_joint_names_[j] ) {
+            if ( head_joint_names_[i] == robot_joint_names_[j] ) {
                 current_head_positions[i] = robot_joint_positions_[j];
                 break;
             }
@@ -174,7 +174,7 @@ void DrivingController::updateHeadPosition() {
     //target_head_positions[0] += head_pan_speed;
     target_head_positions[0] += head_tilt_speed;
 
-    trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(target_head_positions, head_joint_names);
+    trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(target_head_positions, head_joint_names_);
 
     head_cmd_pub_.publish(trajectory_msg);
 }
@@ -236,6 +236,7 @@ void DrivingController::initKeyFrames() {
 
     // load speed control key frames
     private_node_handle_.getParam("leg_joints", leg_joint_names_);
+    private_node_handle_.getParam("head_joint_names", head_joint_names_);
     private_node_handle_.getParam("speed_control_joints", speed_control_joint_names_);
     private_node_handle_.getParam("forward_position", drive_forward_position_);
     private_node_handle_.getParam("stop_position", stop_position_);
