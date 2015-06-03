@@ -115,6 +115,12 @@ add_executable(driving_aid_visualization_node src/driving_aid_visualization_node
 target_link_libraries(driving_aid_visualization_node
    ${catkin_LIBRARIES}
 )
+install ( DIRECTORY launch
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+install ( DIRECTORY launch
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
 
 add_executable(ground_plane_mesh_provider_node src/ground_plane_mesh_provider_node.cpp)
 target_link_libraries(ground_plane_mesh_provider_node
@@ -127,4 +133,9 @@ install(TARGETS driving_aid_visualization_node ground_plane_mesh_provider_node
    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+install ( DIRECTORY launch
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
+
 
