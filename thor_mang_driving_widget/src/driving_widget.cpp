@@ -93,7 +93,7 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     connect(ui_->pushButton_ToggleDrivingMode, SIGNAL(clicked()), this, SLOT(SLO_ToggleDrivingMode()));
     connect(ui_->pushButton_OverrideLimits, SIGNAL(toggled(bool)), this, SLOT(SLO_OverrideLimits(bool)));
 
-    timer_.start(33, this);
+    timer_.start(66, this);
 
     // UI init    
     updateUI(true, true);
