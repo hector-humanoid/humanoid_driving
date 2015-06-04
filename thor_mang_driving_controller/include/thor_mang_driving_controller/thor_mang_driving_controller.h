@@ -87,6 +87,7 @@ private:
   ros::Time last_command_received_time_;
   ros::Time last_auto_stop_info_sent_time_;
   bool controller_enabled_;
+  bool stopping_;
 
   // accumulate absolute steering angle
   double current_absolute_steering_angle_;

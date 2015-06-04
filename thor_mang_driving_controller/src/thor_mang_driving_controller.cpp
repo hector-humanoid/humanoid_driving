@@ -33,6 +33,7 @@ DrivingController::DrivingController() :
     last_auto_stop_info_sent_time_ = ros::Time::now();
 
     controller_enabled_ = false;
+    stopping_           = false;
 
     // Setup head control publisher
     std::string head_controller_topic;
@@ -123,6 +124,7 @@ void DrivingController::handleDrivingCommand(thor_mang_driving_controller::Drivi
     else {
         //updateSteering();
         //updateHeadPosition();
+        stopping_ = false;
         updateDriveForward(msg->drive_forward);
     }
 
@@ -276,10 +278,13 @@ void DrivingController::allStop() {
 
     last_command_received_.drive_forward = false;
 
-    // stop steering
-    std::vector<double> current_steering_position = getRobotJointPositions(steering_joint_names_);
-    trajectory_msg = generateTrajectoryMsg(current_steering_position, steering_joint_names_);
-    steering_control_cmd_pub_.publish(trajectory_msg);
+    if(!stopping_){
+        // stop steering
+        std::vector<double> current_steering_position = getRobotJointPositions(steering_joint_names_);
+        trajectory_msg = generateTrajectoryMsg(current_steering_position, steering_joint_names_);
+        steering_control_cmd_pub_.publish(trajectory_msg);
+        stopping_ = true;
+    }
 }
 
 
