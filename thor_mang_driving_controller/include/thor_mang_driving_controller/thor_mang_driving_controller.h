@@ -9,6 +9,7 @@
 #include <trajectory_msgs/JointTrajectory.h>
 #include <thor_mang_driving_controller/DrivingCommand.h>
 #include <thor_mang_driving_controller/DrivingState.h>
+#include <vigir_planning_msgs/RotationKeyFrames.h>
 
 namespace thor_mang_driving_controller {
   
@@ -25,6 +26,7 @@ public:
   void handleNewJointStateEvent(sensor_msgs::JointStateConstPtr msg);
   void handleNewTimeFromStart(std_msgs::Float64ConstPtr msg);
   void handleControllerEnable(std_msgs::BoolConstPtr msg);
+  void handleKeyframeConfiguration(vigir_planning_msgs::RotationKeyFramesConstPtr msg);
 
   void updateSteering();
   void updateHeadPosition();
@@ -49,7 +51,8 @@ private:
   // Subscribers
   ros::Subscriber joint_state_sub_;
   ros::Subscriber driving_command_sub_;
-  ros::Subscriber controller_enable_sub_;
+  ros::Subscriber controller_enable_sub_;  
+  ros::Subscriber keyframes_sub_;
 
   // Publisher for controller commands
   ros::Publisher steering_control_cmd_pub_;

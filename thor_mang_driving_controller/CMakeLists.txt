@@ -10,6 +10,7 @@ set(CMAKE_BUILD_TYPE Debug)
 find_package(catkin REQUIRED COMPONENTS
   message_generation
   std_msgs
+  vigir_planning_msgs
   roscpp  
   joy
 )
@@ -43,7 +44,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES vigir_drake_matlab
 CATKIN_DEPENDS
-  DEPENDS joy std_msgs
+  DEPENDS joy std_msgs vigir_planning_msgs
 )
 
 ###########

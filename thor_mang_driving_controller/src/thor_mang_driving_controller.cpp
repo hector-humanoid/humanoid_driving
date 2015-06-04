@@ -54,6 +54,9 @@ DrivingController::DrivingController() :
     // publish absolute steering angle
     driving_state_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingState>("driving_controller/driving_state", 1, true);
 
+    keyframes_sub_ = node_handle_.subscribe("driving_controller/keyframe_configuration", 1, &DrivingController::handleKeyframeConfiguration, this);
+
+
     // steering command subscriber
     driving_command_sub_ = node_handle_.subscribe("driving_controller/driving_command", 1, &DrivingController::handleDrivingCommand, this);
 
@@ -138,6 +141,73 @@ void DrivingController::handleControllerEnable(std_msgs::BoolConstPtr msg) {
         ROS_INFO("[DrivingController] Controller enabled.");
     else
         ROS_INFO("[DrivingController] Controller disabled.");
+}
+
+void DrivingController::handleKeyframeConfiguration(vigir_planning_msgs::RotationKeyFramesConstPtr msg)
+{
+
+  ROS_INFO("Processing incoming key frame config!");
+
+  if (!msg->joint_names.empty()){
+    steering_joint_names_ = msg->joint_names;
+  }else{
+    ROS_WARN("Incoming RotationKeyFrame msg didn't contain any joint names, using prior ones!");
+  }
+
+  if (msg->steering_angles.size() != msg->joint_angles.size())
+  {
+    ROS_ERROR("Sizes of steering angles and joint angles do not agree, aborting!");
+    return;
+  }
+
+  size_t size = msg->steering_angles.size();
+
+  steering_key_frames_.clear();
+
+  for (size_t i = 0; i < size; ++i){
+
+    if (msg->joint_angles[i].joint_angles.size() != steering_joint_names_.size())
+    {
+      ROS_ERROR("Joint angle vector size does not agree with joint name vector size!");
+      return;
+    }
+
+    std::vector<double> steering_key_frame;
+
+    for (size_t j = 0; j < msg->joint_angles[i].joint_angles.size(); ++j)
+    {
+      steering_key_frame.push_back(static_cast<double>(msg->joint_angles[i].joint_angles[j]));
+    }
+
+    steering_key_frames_[static_cast<double>(msg->steering_angles[i])] = steering_key_frame;
+  }
+
+  /*
+  steering_angles
+
+
+  std::vector<double> steering_angles;
+  private_node_handle_.getParam("angles", steering_angles);
+
+  for ( int i = 0; i < steering_angles.size(); i++ ) {
+      std::stringstream key_position_name;
+      key_position_name << "angle_" << (int)steering_angles[i];
+      std::string name = key_position_name.str();
+
+      std::vector<double> steering_key_frame;
+      private_node_handle_.getParam(name.c_str(), steering_key_frame);
+
+      steering_key_frames_[steering_angles[i]] = steering_key_frame;
+  }
+
+  // load speed control key frames
+  private_node_handle_.getParam("leg_joints", leg_joint_names_);
+  private_node_handle_.getParam("head_joint_names", head_joint_names_);
+  private_node_handle_.getParam("speed_control_joints", speed_control_joint_names_);
+  private_node_handle_.getParam("forward_position", drive_forward_position_);
+  private_node_handle_.getParam("stop_position", stop_position_);
+  private_node_handle_.getParam("safety_position", safety_position_);
+  */
 }
 
 void DrivingController::updateHeadPosition() {
