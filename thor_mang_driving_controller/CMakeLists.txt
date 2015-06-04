@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(thor_mang_driving_controller)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wconversion")
+
 #set(CMAKE_BUILD_TYPE RelWithDebInfo)
 set(CMAKE_BUILD_TYPE Debug)
 

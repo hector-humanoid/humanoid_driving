@@ -17,13 +17,13 @@ DrivingController::DrivingController() :
     last_command_received_.all_stop = true;
     last_command_received_.absolute_target_steering_angle = 0.0;
     last_command_received_.drive_forward = false;
-    last_command_received_.absolute_head_tilt = 0.0;
-    last_command_received_.absolute_head_pan = 0.0;
+    last_command_received_.absolute_head_tilt = 0.0f;
+    last_command_received_.absolute_head_pan = 0.0f;
     time_from_start_ = 0.1;
 
-    current_absolute_steering_angle_ = 0.0;
-    current_head_tilt_ = 0.0;
-    current_head_pan_ = 0.0;
+    current_absolute_steering_angle_ = 0.0f;
+    current_head_tilt_ = 0.0f;
+    current_head_pan_ = 0.0f;
 
     driving_counter_ = 0;
 
