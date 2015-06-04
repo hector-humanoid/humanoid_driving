@@ -36,6 +36,7 @@ public:
     pnh.param("wheel_base", p_wheel_base_, 2.0);
     pnh.param("wheel_radius", p_wheel_radius_, 0.3);
     pnh.param("wheel_width", p_wheel_width_, 0.2);
+    pnh.param("preview_distance", p_preview_distance_, 60.0);
 
 
     //vehicle frame is between rear axles projected to ground
@@ -192,6 +193,12 @@ public:
 
     //std::cout << "rotation_vector:\n" << rotation_vector << "\n";
 
+    double turn_circle_circumference = std::abs(turn_radius * M_PI * 2.0);
+
+    double circle_portion_covered_by_preview_rad = p_preview_distance_ / turn_circle_circumference  ;
+
+    double circle_sample_step = circle_portion_covered_by_preview_rad / 40.0;
+
     for (size_t i = 0; i < 40; ++i)
     {
       Eigen::Affine3d o_t_i (Eigen::Affine3d::Identity());
@@ -209,7 +216,7 @@ public:
 
       //Eigen::Vector2d tmp(o_t_i * rotation * left_wheel);
       //Eigen::Vector2d tmp(o_t_i * rotation * left_wheel).translation();
-      Eigen::Vector3d tmp(o_t_i * rotation_left *Eigen::Vector3d(p_wheel_base_, (turn_radius)-p_wheel_track_*0.5, 0.0));
+      Eigen::Vector3d tmp(o_t_i * rotation_left *Eigen::Vector3d(p_wheel_base_, (turn_radius)-p_wheel_track_*circle_sample_step, 0.0));
 
       point_vector_left[i].x = tmp.x();
       point_vector_left[i].y = -tmp.y();
@@ -220,7 +227,7 @@ public:
       //Eigen::Affine3d rotation_right (Eigen::AngleAxisd( static_cast<double>(i) * 0.05,
       //                                 (turn_radius > 0.0) ? -(Eigen::Vector3d::UnitZ()) : Eigen::Vector3d::UnitZ() ));
 
-      tmp = o_t_i * rotation_right*Eigen::Vector3d(p_wheel_base_, (turn_radius)+p_wheel_track_*0.5, 0.0);
+      tmp = o_t_i * rotation_right*Eigen::Vector3d(p_wheel_base_, (turn_radius)+p_wheel_track_*circle_sample_step, 0.0);
 
       point_vector_right[i].x = tmp.x();
       point_vector_right[i].y = -tmp.y();
@@ -285,6 +292,7 @@ protected:
   double p_wheel_base_;
   double p_wheel_radius_;
   double p_wheel_width_;
+  double p_preview_distance_;
 
 
   std::string p_vehicle_frame_;
