@@ -9,6 +9,6 @@
     <rosparam file="$(find thor_mang_driving_widget)/config/logitech_f310_joypad.yaml"/>
   </node>
   
-  <include file = "$(find driving_aid_visualization)/launch/polaris_drive_aid.launch" />
+  <include file = "$(find driving_aid_visualization)/launch/polaris_drive_aid_atlas.launch" />
     
 </launch>

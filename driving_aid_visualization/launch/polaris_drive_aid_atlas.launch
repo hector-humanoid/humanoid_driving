@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node name="driving_aid_visualization_node" pkg="driving_aid_visualization" type="driving_aid_visualization_node" output="screen">
+    <param name="wheel_track" value="1.4"/>
+    <param name="wheel_base" value="2.07"/>
+    <param name="wheel_radius" value="0.3551"/>
+    <param name="wheel_width" value="0.27"/>
+    
+    <remap from="~/steering_angle" to="/driving_widget/wheel_angle_rad" />
+  </node>
+  
+  <node name="ground_plane_mesh_provider_node" pkg="driving_aid_visualization" type="ground_plane_mesh_provider_node" output="screen"/>  
+  
+  <node pkg="tf" type="static_transform_publisher" name="pelvis_to_vehicle_frame_publisher" args="-0.98 0.40 -1.0 0 0 0 /pelvis /vehicle_frame 100"/>
+ 
+</launch>
+
+
+
+<!--
+  rear wheel: -0.98
+  front wheel: 1.09
+  left wheel mid: -0.7071
+  left wheel inner: 0.566
+  radius: 0.3551
+-->
