@@ -14,6 +14,7 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
 
     // steering parameters
     steering_sensitivity_ = 2.5;
+    steering_speed_ = 0.0;
     head_sensitivity_ = 0.01;
     allow_head_sensitivity_change_ = false;
     allow_steering_sensitivity_change_ = false;
@@ -33,6 +34,7 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     head_pan_speed_ = 0.0;
     current_head_pan_ = 0.0;
     current_head_tilt_ = 0.0;
+    driving_counter_ = 0.0;
 
     connection_loss_ = false;
 

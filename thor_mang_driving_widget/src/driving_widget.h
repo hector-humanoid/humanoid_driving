@@ -133,7 +133,6 @@ private:
     double absolute_target_steering_angle_;
     bool drive_forward_;
     unsigned int driving_counter_;
-    double time_from_start_;
 
     // Head control elements
     double head_target_tilt_;
