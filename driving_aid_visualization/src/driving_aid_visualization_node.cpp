@@ -208,7 +208,7 @@ public:
 
 
 
-      Eigen::Affine3d rotation_left (Eigen::AngleAxisd(static_cast<double>(i) * 0.05,
+      Eigen::Affine3d rotation_left (Eigen::AngleAxisd(static_cast<double>(i) * circle_sample_step,
                                      rotation_vector));
 
       //Eigen::Affine3d rotation_left (Eigen::AngleAxisd( static_cast<double>(i) * 0.05,
@@ -216,18 +216,18 @@ public:
 
       //Eigen::Vector2d tmp(o_t_i * rotation * left_wheel);
       //Eigen::Vector2d tmp(o_t_i * rotation * left_wheel).translation();
-      Eigen::Vector3d tmp(o_t_i * rotation_left *Eigen::Vector3d(p_wheel_base_, (turn_radius)-p_wheel_track_*circle_sample_step, 0.0));
+      Eigen::Vector3d tmp(o_t_i * rotation_left *Eigen::Vector3d(p_wheel_base_, (turn_radius)-p_wheel_track_*0.5, 0.0));
 
       point_vector_left[i].x = tmp.x();
       point_vector_left[i].y = -tmp.y();
 
-      Eigen::Affine3d rotation_right (Eigen::AngleAxisd(static_cast<double>(i) * 0.05,
+      Eigen::Affine3d rotation_right (Eigen::AngleAxisd(static_cast<double>(i) * circle_sample_step,
                                       rotation_vector));
 
       //Eigen::Affine3d rotation_right (Eigen::AngleAxisd( static_cast<double>(i) * 0.05,
       //                                 (turn_radius > 0.0) ? -(Eigen::Vector3d::UnitZ()) : Eigen::Vector3d::UnitZ() ));
 
-      tmp = o_t_i * rotation_right*Eigen::Vector3d(p_wheel_base_, (turn_radius)+p_wheel_track_*circle_sample_step, 0.0);
+      tmp = o_t_i * rotation_right*Eigen::Vector3d(p_wheel_base_, (turn_radius)+p_wheel_track_*0.5, 0.0);
 
       point_vector_right[i].x = tmp.x();
       point_vector_right[i].y = -tmp.y();
