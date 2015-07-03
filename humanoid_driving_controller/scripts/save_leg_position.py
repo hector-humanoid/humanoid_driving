@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import roslib
 
-roslib.load_manifest('thor_mang_driving_controller')
+roslib.load_manifest('humanoid_driving_controller')
 
 import rospy
 from rospkg import RosPack
@@ -51,7 +51,7 @@ class LegPositionSaver():
 
     def save_leg_positions_to_disc(self, file_name):
         rp = RosPack()
-        save_path = rp.get_path('thor_mang_driving_controller') + '/config/throttle/' + file_name
+        save_path = rp.get_path('humanoid_driving_controller') + '/config/throttle/' + file_name
 
         yaml_dict = dict()
         yaml_dict.update({'leg_joints': leg_joints})

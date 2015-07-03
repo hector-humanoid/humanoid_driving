@@ -1,9 +1,11 @@
-#include "driving_widget.h"
+#include <humanoid_driving_widget/driving_widget.h>
 #include "ui_driving_widget.h"
 
 #include <ros/ros.h>
 
 #include <QGraphicsItem>
+
+namespace humanoid_driving_widget {
 
 DrivingWidget::DrivingWidget(QWidget *parent) :
     QMainWindow(parent),
@@ -73,7 +75,7 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
 
     // Setup driving commands
     all_stop_enabled_sub_ = node_handle_.subscribe("driving_controller/all_stop", 1, &DrivingWidget::handleAllStopEnabled, this);
-    driving_command_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingCommand>("driving_controller/driving_command", 1, false);
+    driving_command_pub_ = node_handle_.advertise<humanoid_driving_controller::DrivingCommand>("driving_controller/driving_command", 1, false);
 
     // Enable / Disable controller, Reset
     controller_enable_pub_ = node_handle_.advertise<std_msgs::Bool>("driving_controller/controller_enable", 1, true);
@@ -267,7 +269,7 @@ void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
     ui_->label_CameraImage->setPixmap(pixmap);
 }
 
-void DrivingWidget::handleNewDrivingState(thor_mang_driving_controller::DrivingStateConstPtr msg) {
+void DrivingWidget::handleNewDrivingState(humanoid_driving_controller::DrivingStateConstPtr msg) {
     current_absolute_steering_angle_ = msg->current_absolute_steering_angle;
     connection_loss_ = msg->connection_loss;
     current_head_pan_ = msg->current_head_pan;
@@ -406,7 +408,7 @@ void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
     updateUI(update_steering_sensitivity, update_head_sensitivity);
 }
 
-void DrivingWidget::handleAllStopEnabled(thor_mang_driving_controller::DrivingCommandConstPtr msg) {
+void DrivingWidget::handleAllStopEnabled(humanoid_driving_controller::DrivingCommandConstPtr msg) {
     all_stop_ = msg->all_stop;
     drive_forward_ = msg->drive_forward;
 
@@ -443,7 +445,7 @@ void DrivingWidget::sendDrivingCommand() {
     head_target_pan_ += head_pan_speed_;
     head_target_tilt_ += head_tilt_speed_;
 
-    thor_mang_driving_controller::DrivingCommand driving_command_msg;
+    humanoid_driving_controller::DrivingCommand driving_command_msg;
     driving_command_msg.all_stop = all_stop_;
     driving_command_msg.absolute_target_steering_angle = absolute_target_steering_angle_;
     driving_command_msg.drive_forward = drive_forward_;
@@ -482,6 +484,8 @@ void DrivingWidget::checkSteeringLimits() {
             steering_speed_ = 0.0;
         }
     }
+}
+
 }
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import roslib
 
-roslib.load_manifest('thor_mang_driving_controller')
+roslib.load_manifest('humanoid_driving_controller')
 
 import rospy
 from rospkg import RosPack
@@ -56,7 +56,7 @@ class KeyPositionSaver():
 
     def save_key_positions_to_disc(self, file_name):
         rp = RosPack()
-        save_path = rp.get_path('thor_mang_driving_controller') + '/config/steering/'
+        save_path = rp.get_path('humanoid_driving_controller') + '/config/steering/'
 
         yaml_dict = dict()
         yaml_dict.update({'joints': joints})

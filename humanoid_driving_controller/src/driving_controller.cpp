@@ -1,8 +1,7 @@
-#include "thor_mang_driving_controller/thor_mang_driving_controller.h"
-
+#include <humanoid_driving_controller/driving_controller.h>
 #include <trajectory_msgs/JointTrajectory.h>
 
-namespace thor_mang_driving_controller {
+namespace humanoid_driving_controller {
 
 DrivingController::DrivingController() :
     private_node_handle_("~")
@@ -49,10 +48,10 @@ DrivingController::DrivingController() :
     speed_control_cmd_pub_ = node_handle_.advertise<trajectory_msgs::JointTrajectory>(speed_controller_topic, 1, false);
 
     // all stop enabled on robot side
-    all_stop_enabled_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingCommand>("driving_controller/all_stop", 1, false);
+    all_stop_enabled_pub_ = node_handle_.advertise<humanoid_driving_controller::DrivingCommand>("driving_controller/all_stop", 1, false);
 
     // publish absolute steering angle
-    driving_state_pub_ = node_handle_.advertise<thor_mang_driving_controller::DrivingState>("driving_controller/driving_state", 1, true);
+    driving_state_pub_ = node_handle_.advertise<humanoid_driving_controller::DrivingState>("driving_controller/driving_state", 1, true);
 
     // steering command subscriber
     driving_command_sub_ = node_handle_.subscribe("driving_controller/driving_command", 1, &DrivingController::handleDrivingCommand, this);
@@ -88,7 +87,7 @@ void DrivingController::checkReceivedMessages() {
         if ( ros::Time::now() - last_auto_stop_info_sent_time_ >= ros::Duration(1.0) ) {
             all_stop_enabled_pub_.publish(last_command_received_);
 
-            thor_mang_driving_controller::DrivingState driving_state_msg;
+            humanoid_driving_controller::DrivingState driving_state_msg;
             driving_state_msg.current_absolute_steering_angle = current_absolute_steering_angle_;
             driving_state_msg.connection_loss = connection_loss_;
             driving_state_msg.current_head_tilt = current_head_tilt_;
@@ -104,7 +103,7 @@ void DrivingController::checkReceivedMessages() {
     }
 }
 
-void DrivingController::handleDrivingCommand(thor_mang_driving_controller::DrivingCommandConstPtr msg) {
+void DrivingController::handleDrivingCommand(humanoid_driving_controller::DrivingCommandConstPtr msg) {
     if ( !received_robot_positions_ ) {
         ROS_ERROR("[DrivingController] No robot positions received => No Update");
         return;
@@ -223,7 +222,7 @@ void DrivingController::updateSteering() {
     if ( last_command_received_.drive_forward && !last_command_received_.all_stop )
         driving_counter_++;
 
-    thor_mang_driving_controller::DrivingState driving_state_msg;
+    humanoid_driving_controller::DrivingState driving_state_msg;
     driving_state_msg.current_absolute_steering_angle = current_absolute_steering_angle_;
     driving_state_msg.connection_loss = connection_loss_;
     driving_state_msg.current_head_tilt = current_head_tilt_;

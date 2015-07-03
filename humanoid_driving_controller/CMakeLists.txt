@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(thor_mang_driving_controller)
+project(humanoid_driving_controller)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wconversion")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wconversion -std=c++11")
 
 #set(CMAKE_BUILD_TYPE RelWithDebInfo)
-set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Debug)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -15,8 +15,6 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp  
   joy
 )
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 ###################################
 ## catkin specific configuration ##
@@ -42,8 +40,7 @@ add_message_files(DIRECTORY msg FILES ${MSG_FILES})
 generate_messages(DEPENDENCIES ${MSG_DEPS})
 
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES vigir_drake_matlab
+  INCLUDE_DIRS include
 CATKIN_DEPENDS
   DEPENDS joy std_msgs
 )
@@ -61,12 +58,8 @@ include_directories(
 )
 
 ## Declare a cpp executable
-add_executable(driving_controller src/thor_mang_driving_controller_node.cpp src/thor_mang_driving_controller.cpp)
-add_dependencies(driving_controller thor_mang_driving_controller_generate_messages_cpp)
-
-## Add cmake target dependencies of the executable/library
-## as an example, message headers may need to be generated before nodes
-#add_dependencies(thor_driving_controller vigir_planning_msgs_generate_messages_cpp)
+add_executable(driving_controller src/driving_controller_node.cpp src/driving_controller.cpp)
+add_dependencies(driving_controller humanoid_driving_controller_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
  target_link_libraries(driving_controller

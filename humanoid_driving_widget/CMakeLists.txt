@@ -1,17 +1,17 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(thor_mang_driving_widget)
+project(humanoid_driving_widget)
 
-set(CMAKE_BUILD_TYPE Debug)
+#set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 
 ## Find catkin and any catkin packages on which
 ## this package depends at build time
-find_package(catkin REQUIRED COMPONENTS roscpp rospy roslib std_msgs thor_mang_driving_controller)
+find_package(catkin REQUIRED COMPONENTS roscpp roslib std_msgs humanoid_driving_controller)
 
 ## Declare things to be passed to other projects
 catkin_package(
-    INCLUDE_DIRS src
+    INCLUDE_DIRS src include
     LIBRARIES ${PROJECT_NAME}
     CATKIN_DEPENDS roscpp roslib std_msgs
 )
@@ -20,15 +20,10 @@ catkin_package(
 find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
 include(${QT_USE_FILE})
 
-## I prefer the Qt signals and slots to avoid defining "emit", "slots",
-## etc because they can conflict with boost signals, so define QT_NO_KEYWORDS here.
-#add_definitions(-DQT_NO_KEYWORDS)
-
 ## Here we specify which header files need to be run through "moc",
 ## Qt's meta-object compiler.
-
 qt4_wrap_cpp(MOC_FILES
-  src/driving_widget.h
+  include/humanoid_driving_widget/driving_widget.h
 )
 
 
@@ -53,7 +48,7 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR} s
 add_executable(driving_widget ${UIC_FILES} ${SOURCE_FILES} ${driving_widget_RESOURCES_RCC})
 target_link_libraries(driving_widget ${catkin_LIBRARIES} ${QT_LIBRARIES})
 add_dependencies(driving_widget ${catkin_EXPORTED_TARGETS})
-add_dependencies(driving_widget thor_mang_driving_controller_generate_messages_cpp)
+add_dependencies(driving_widget humanoid_driving_controller_generate_messages_cpp)
 
 add_library(${PROJECT_NAME} ${UIC_FILES} ${SOURCE_FILES})
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${QT_LIBRARIES})
