@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node name="keyboard" pkg="keyboard" type="keyboard"/>
+  <node name="key_to_joy_mapper" pkg="key_to_joy_mapper" type="key_to_joy_mapper" output="screen" respawn="false">
+    <rosparam file="$(find key_to_joy_mapper)/config/mapping.yaml"/> <!-- mapping keys to joy commands -->    
+  </node>
+</launch>
