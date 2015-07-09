@@ -1,5 +1,5 @@
-float32 current_absolute_steering_angle
-float32 current_head_pan
-float32 current_head_tilt
+float32 steering_wheel_angle
+float32 head_pan
+float32 head_tilt
 uint32 driving_counter
 bool connection_loss

@@ -4,7 +4,7 @@ project(humanoid_driving_controller)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wconversion -std=c++11")
 
 #set(CMAKE_BUILD_TYPE RelWithDebInfo)
-#set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Debug)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -35,6 +35,12 @@ set(MSG_FILES
   DrivingState.msg
 )
 
+set(SOURCE_FILES
+  src/driving_controller_node.cpp
+  src/driving_controller.cpp
+  include/humanoid_driving_controller/driving_controller.h
+)
+
 add_message_files(DIRECTORY msg FILES ${MSG_FILES})
 
 generate_messages(DEPENDENCIES ${MSG_DEPS})
@@ -58,7 +64,7 @@ include_directories(
 )
 
 ## Declare a cpp executable
-add_executable(driving_controller src/driving_controller_node.cpp src/driving_controller.cpp)
+add_executable(driving_controller ${SOURCE_FILES})
 add_dependencies(driving_controller humanoid_driving_controller_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against

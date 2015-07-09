@@ -6,7 +6,7 @@
   </node>
   <node name="driving_widget" pkg="humanoid_driving_widget" type="driving_widget" output="screen">
     <rosparam param="camera_topic">/head_cam/image_raw</rosparam>
-    <rosparam file="$(find humanoid_driving_widget)/config/logitech_joypad.yaml"/>
+    <rosparam file="$(find humanoid_driving_widget)/config/logitech_wingman.yaml"/>
   </node>
   
    <include file = "$(find driving_aid_visualization)/launch/polaris_drive_aid.launch" />

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(humanoid_driving_widget)
 
-#set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 
@@ -42,6 +42,7 @@ set(SOURCE_FILES
   ${MOC_FILES}
   src/driving_widget_node.cpp
   src/driving_widget.cpp
+  include/humanoid_driving_widget/driving_widget.h
 )
 include_directories(include ${catkin_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR} src)
 

@@ -1,3 +1,4 @@
 head_controller_topic: /thor_mang/head_traj_controller/command
-head_joint_names: [head_pan, head_tilt]
+head_pan_joint_name: "head_pan"
+head_tilt_joint_name: "head_tilt"
 head_default_position: [0, 0]

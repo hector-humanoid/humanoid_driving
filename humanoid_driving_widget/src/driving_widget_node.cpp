@@ -36,6 +36,7 @@ int main(int argc, char *argv[])
     {
       ros::init( argc, argv, "driving_widget", ros::init_options::AnonymousName );
     }
+
     QApplication a(argc, argv);
     humanoid_driving_widget::DrivingWidget w;
     w.show();

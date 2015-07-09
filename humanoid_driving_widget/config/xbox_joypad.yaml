@@ -5,7 +5,7 @@ joypad_axis_head_tilt: 2
 
 # button ids
 joypad_button_forward: 0
-joypad_button_all_stop: 1
+joypad_button_all_hold: 1
 joypad_button_steering_sensitivity_plus: -1
 joypad_button_steering_sensitivity_minus: -1
 joypad_button_head_sensitivity_plus: -1

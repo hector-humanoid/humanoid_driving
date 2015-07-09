@@ -14,31 +14,27 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
 {
     ui_->setupUi(this);
 
-    // steering parameters
-    steering_sensitivity_ = 2.5;
-    steering_speed_ = 0.0;
-    head_sensitivity_ = 0.01;
-    allow_head_sensitivity_change_ = false;
-    allow_steering_sensitivity_change_ = false;
+    // steering parameters    
+    steering_speed_ = 0.0;    
     ignore_steering_limits_ = false;
 
     // Driving control elements
-    all_stop_ = true;
-    current_steering_angle_ = 0.0;
-    current_absolute_steering_angle_ = 0.0;
-    absolute_target_steering_angle_ = 0.0;
-    drive_forward_ = false;
+    current_state_.steering_wheel_angle = 0.0;
+    current_state_.head_pan = 0.0;
+    current_state_.head_tilt = 0.0;
+    current_state_.connection_loss = false;
+    current_state_.driving_counter = 0;
+
+    target_command_.all_hold = true;
+    target_command_.steering_wheel_angle = 0.0;
+    target_command_.drive_forward = false;
+    target_command_.head_pan = 0.0;
+    target_command_.head_tilt = 0.0;
 
     controller_enabled_ = false;
-    head_target_pan_ = 0.0;
-    head_target_tilt_ = 0.0;
+
     head_tilt_speed_ = 0.0;
     head_pan_speed_ = 0.0;
-    current_head_pan_ = 0.0;
-    current_head_tilt_ = 0.0;
-    driving_counter_ = 0.0;
-
-    connection_loss_ = false;
 
     setGUIEnabled(false);
 
@@ -56,7 +52,7 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     node_handle_private_.param("joypad_axis_head_pan_2", joypad_ids_[AXIS_HEAD_PAN_2], 5);
 
     node_handle_private_.param("joypad_button_forward", joypad_ids_[BUTTON_FORWARD], 1);
-    node_handle_private_.param("joypad_button_all_stop", joypad_ids_[BUTTON_ALL_STOP], 2);
+    node_handle_private_.param("joypad_button_all_hold", joypad_ids_[BUTTON_ALL_HOLD], 2);
     node_handle_private_.param("joypad_button_steering_sensitivity_plus", joypad_ids_[BUTTON_STEERING_SENSITIVITY_PLUS], 7);
     node_handle_private_.param("joypad_button_steering_sensitivity_minus", joypad_ids_[BUTTON_STEERING_SENSITIVITY_MINUS], 6);
     node_handle_private_.param("joypad_button_head_sensitivity_plus", joypad_ids_[BUTTON_HEAD_SENSITIVITY_PLUS], 5);
@@ -64,17 +60,12 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     node_handle_private_.param("joypad_button_head_to_default", joypad_ids_[BUTTON_HEAD_TO_DEFAULT], 11);
     node_handle_private_.param("joypad_button_steering_to_default", joypad_ids_[BUTTON_STEERING_TO_DEFAULT], 10);
 
-    node_handle_private_.param("steering_correction_factor", steering_correction_, -1.0);
-    node_handle_private_.param("head_tilt_correction_factor", head_tilt_correction_, -1.0);
-    node_handle_private_.param("head_pan_correction_factor", head_pan_correction_, 1.0);
-
-    if ( joypad_ids_[BUTTON_STEERING_SENSITIVITY_PLUS] < 0 || joypad_ids_[BUTTON_STEERING_SENSITIVITY_PLUS] < 0 )
-        allow_steering_sensitivity_change_ = false;
-    if ( joypad_ids_[BUTTON_HEAD_SENSITIVITY_PLUS] < 0 || joypad_ids_[BUTTON_HEAD_SENSITIVITY_PLUS] < 0 )
-        allow_head_sensitivity_change_ = false;
+    node_handle_private_.param("steering_sensitivity", steering_sensitivity_, -0.08);
+    node_handle_private_.param("head_tilt_sensitivity", head_tilt_sensitivity_, -0.05);
+    node_handle_private_.param("head_pan_sensitivity", head_pan_sensitivity_, 0.05);
 
     // Setup driving commands
-    all_stop_enabled_sub_ = node_handle_.subscribe("driving_controller/all_stop", 1, &DrivingWidget::handleAllStopEnabled, this);
+    all_hold_enabled_sub_ = node_handle_.subscribe("driving_controller/all_hold", 1, &DrivingWidget::handleAllHoldEnabled, this);
     driving_command_pub_ = node_handle_.advertise<humanoid_driving_controller::DrivingCommand>("driving_controller/driving_command", 1, false);
 
     // Enable / Disable controller, Reset
@@ -90,16 +81,18 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
     // setup user interface
     connect(ui_->pushButton_ConfirmSteeringSensitivity, SIGNAL(clicked()), this, SLOT(SLO_SteeringSensitivityConfirmed()));
     connect(ui_->spinBox_SteeringSensitivity, SIGNAL(valueChanged(double)), this, SLOT(SLO_SteeringSensitivityChanged()));
-    connect(ui_->pushButton_ConfirmHeadSensitivity, SIGNAL(clicked()), this, SLOT(SLO_HeadSensitivityConfirmed()));
-    connect(ui_->spinBox_HeadSensitivity, SIGNAL(valueChanged(double)), this, SLOT(SLO_HeadSensitivityChanged()));
+    connect(ui_->pushButton_ConfirmHeadTiltSensitivity, SIGNAL(clicked()), this, SLOT(SLO_HeadTiltSensitivityConfirmed()));
+    connect(ui_->spinBox_HeadTiltSensitivity, SIGNAL(valueChanged(double)), this, SLOT(SLO_HeadTiltSensitivityChanged()));
+    connect(ui_->pushButton_ConfirmHeadPanSensitivity, SIGNAL(clicked()), this, SLOT(SLO_HeadPanSensitivityConfirmed()));
+    connect(ui_->spinBox_HeadPanSensitivity, SIGNAL(valueChanged(double)), this, SLOT(SLO_HeadPanSensitivityChanged()));
     connect(ui_->pushButton_ShowCameraImage, SIGNAL(toggled(bool)), this, SLOT(SLO_ShowCameraImage(bool)));
-    connect(ui_->pushButton_AllStop, SIGNAL(clicked(bool)), this, SLOT(SLO_AllStopButtonChecked(bool)));
+    connect(ui_->pushButton_AllHold, SIGNAL(clicked(bool)), this, SLOT(SLO_AllHoldButtonChecked(bool)));
     connect(ui_->pushButton_ToggleDrivingMode, SIGNAL(clicked()), this, SLOT(SLO_ToggleDrivingMode()));
     connect(ui_->pushButton_OverrideLimits, SIGNAL(toggled(bool)), this, SLOT(SLO_OverrideLimits(bool)));
 
     timer_.start(66, this);
 
-    // UI init    
+    // UI init
     updateUI(true, true);
     ui_->graphicsView_Wheels->setScene(&wheel_scene_);
 }
@@ -107,6 +100,103 @@ DrivingWidget::DrivingWidget(QWidget *parent) :
 DrivingWidget::~DrivingWidget()
 {
     delete ui_;
+}
+
+void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
+    if ( controller_enabled_ == false )
+        return;
+
+    handleSteeringCommand(msg->axes[ joypad_ids_[DrivingWidget::AXIS_STEERING] ]);
+    handleHeadCommand(msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_TILT_2] ], msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_PAN_2]]);
+    handleHeadCommand(msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_TILT] ], msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_PAN]]);
+
+    target_command_.drive_forward = msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_FORWARD] ];
+
+    if ( msg->buttons[ joypad_ids_[ DrivingWidget::BUTTON_ALL_HOLD] ] )
+        target_command_.all_hold = !target_command_.all_hold;
+
+    bool update_steering_sensitivity = false;
+    if ( joypad_ids_[DrivingWidget::BUTTON_STEERING_SENSITIVITY_PLUS] >= 0 ) {
+        if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_STEERING_SENSITIVITY_PLUS]] ) {
+            steering_sensitivity_ += SteeringSensitivityStep;
+            update_steering_sensitivity = true;
+        }
+
+        if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_STEERING_SENSITIVITY_MINUS]] ) {
+            steering_sensitivity_ -= SteeringSensitivityStep;
+            update_steering_sensitivity = true;
+        }
+    }
+
+    bool update_head_sensitivity = false;
+    if ( joypad_ids_[DrivingWidget::BUTTON_HEAD_SENSITIVITY_PLUS] >= 0 ) {
+        if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_HEAD_SENSITIVITY_PLUS]] ) {
+            head_tilt_sensitivity_ += HeadSensitivityStep;
+            head_pan_sensitivity_ += HeadSensitivityStep;
+            update_head_sensitivity = true;
+        }
+
+        if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_HEAD_SENSITIVITY_MINUS]] ) {
+            head_tilt_sensitivity_ -= HeadSensitivityStep;
+            head_pan_sensitivity_ -= HeadSensitivityStep;
+            update_head_sensitivity = true;
+        }
+    }
+
+    if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_HEAD_TO_DEFAULT]] ) {
+        target_command_.head_pan = 0.0;
+        target_command_.head_tilt = 0.0;
+    }
+
+    if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_STEERING_TO_DEFAULT]] ) {
+        target_command_.steering_wheel_angle = 0.0;
+    }
+
+    updateUI(update_steering_sensitivity, update_head_sensitivity);
+}
+
+void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
+    QImage img(&(msg->data[0]), msg->width, msg->height, QImage::Format_RGB888);
+    QPixmap pixmap = QPixmap::fromImage(img.scaled( ui_->label_CameraImage->width()-8, ui_->label_CameraImage->height()-8, Qt::KeepAspectRatio));
+    ui_->label_CameraImage->setPixmap(pixmap);
+}
+
+void DrivingWidget::handleAllHoldEnabled(humanoid_driving_controller::DrivingCommandConstPtr msg) {
+    target_command_.all_hold = msg->all_hold;
+    target_command_.drive_forward = msg->drive_forward;
+
+    if ( target_command_.all_hold ) {
+        target_command_.steering_wheel_angle = current_state_.steering_wheel_angle;
+        target_command_.head_pan = msg->head_pan;
+        target_command_.head_tilt = msg->head_tilt;
+    }
+}
+
+void DrivingWidget::handleControllerEnableACK(std_msgs::BoolConstPtr msg) {
+    if ( msg->data ) { // controller enabled
+        ui_->pushButton_ToggleDrivingMode->setText(tr("Disable Driving Mode"));
+        ui_->label_WaitingForACK->setText(tr("Driving Mode Active!"));
+        controller_enabled_ = true;
+    }
+    else { // controller disabled
+        ui_->pushButton_ToggleDrivingMode->setText(tr("Enable Driving Mode"));
+        ui_->label_WaitingForACK->setText(tr("Driving Mode Disabled!"));
+        ui_->pushButton_ShowCameraImage->setChecked(false);
+        controller_enabled_ = false;
+    }
+
+    setGUIEnabled(controller_enabled_);
+}
+
+void DrivingWidget::handleNewDrivingState(humanoid_driving_controller::DrivingStateConstPtr msg) {
+    current_state_ = *msg;
+
+    // Publish wheel angle in rad
+    double wheel_angle_rad = current_state_.steering_wheel_angle*WheelAnglePerSteeringRotation / MaxSteeringWheelRotation;
+
+    std_msgs::Float64 wheel_angle_msg;
+    wheel_angle_msg.data = -wheel_angle_rad;
+    wheel_angle_pub_.publish(wheel_angle_msg);
 }
 
 
@@ -125,180 +215,6 @@ void DrivingWidget::timerEvent(QTimerEvent *event)
         ros::spinOnce();
 }
 
-void DrivingWidget::updateUI(bool update_steering_sensitivity, bool update_head_sensitivity) {
-    double wheel_position = current_absolute_steering_angle_*45/540;
-
-    // update line edits and spin boxes
-    ui_->lineEdit_WheelAngle->setText( QString("%1 \260").arg(wheel_position, 3, 'f', 1));
-    ui_->lineEdit_SteeringAngle->setText(QString("%1 \260").arg(current_absolute_steering_angle_, 3, 'f', 1));
-
-    if ( update_steering_sensitivity ) {
-        ui_->spinBox_SteeringSensitivity->blockSignals(true);
-        ui_->spinBox_SteeringSensitivity->setValue(steering_sensitivity_);
-        ui_->spinBox_SteeringSensitivity->blockSignals(false);
-    }
-
-    if ( update_head_sensitivity ) {
-        ui_->spinBox_HeadSensitivity->blockSignals(true);
-        ui_->spinBox_HeadSensitivity->setValue(head_sensitivity_);
-        ui_->spinBox_HeadSensitivity->blockSignals(false);
-    }
-
-    ui_->pushButton_AllStop->setChecked(all_stop_);
-    if ( drive_forward_ )
-        ui_->label_DrivingActive->setStyleSheet("background-color:#00C000;color:#FFFFFF;");
-    else
-        ui_->label_DrivingActive->setStyleSheet("");
-
-    //ui_->label_DrivingActive->setVisible(drive_forward_);
-
-    // set current steering angle => map to [-180; +180]
-    double limited_steering_angle = current_steering_angle_;
-    while ( limited_steering_angle >= 360.0 )  limited_steering_angle -= 360.0;
-    while ( limited_steering_angle <= -360.0 ) limited_steering_angle += 360.0;
-
-    if ( limited_steering_angle <= -180.0 ) limited_steering_angle += 360.0;
-    if ( limited_steering_angle >= 180.0 )  limited_steering_angle -= 360.0;
-
-    ui_->dial_CurrentSteeringPosition->setValue( (int)limited_steering_angle);
-
-    // set target steering angle => map to [-180; +180]
-    double limited_target_steering_angle = absolute_target_steering_angle_;
-    while ( limited_target_steering_angle >= 360.0 )  limited_target_steering_angle -= 360.0;
-    while ( limited_target_steering_angle <= -360.0 ) limited_target_steering_angle += 360.0;
-
-    if ( limited_target_steering_angle <= -180.0 ) limited_target_steering_angle += 360.0;
-    if ( limited_target_steering_angle >= 180.0 )  limited_target_steering_angle -= 360.0;
-
-    ui_->dial_TargetSteeringPosition->setValue( (int)limited_target_steering_angle);
-
-    drawWheelVisualization();
-
-    ui_->slider_HeadPan->setValue(head_target_pan_*100.0);
-    ui_->slider_HeadTilt->setValue(head_target_tilt_*100.0);
-    ui_->slider_CurrentHeadPan->setValue(current_head_pan_*100.0);
-    ui_->slider_CurrentHeadTilt->setValue(current_head_tilt_*100.0);
-
-    ui_->lineEdit_DrivingCounter->setText(QString("%1").arg(driving_counter_));
-
-
-}
-
-void DrivingWidget::drawWheelVisualization() {
-    double wheel_angle = current_absolute_steering_angle_*45/540;
-    double total_width = ui_->graphicsView_Wheels->width()-12;
-    double total_height = ui_->graphicsView_Wheels->height()-12;
-    double car_length = std::min(total_width, total_height)-120;
-    double car_width = car_length / 2.0;
-    double wheel_width = car_width / 4.0;
-    double wheel_length = wheel_width*3.0;
-
-    QTransform base_wheel_transform(1.0, 0.0, 0.0, 1.0, -wheel_width/2.0, -wheel_length/2.0);
-
-    wheel_scene_.clear();
-    wheel_scene_.setSceneRect(-total_width/2.0, -total_height/2.0, total_width, total_height);
-    wheel_scene_.addRect(-car_width/2.0, -car_length/2.0, car_width, car_length );
-
-    // back wheels
-    QGraphicsRectItem *wheel = wheel_scene_.addRect(-car_width/2.0, car_length/2.0, wheel_width, wheel_length, QPen(), QBrush(Qt::SolidPattern));
-    wheel->setTransform(base_wheel_transform);
-
-    wheel = wheel_scene_.addRect(car_width/2.0, car_length/2.0, wheel_width, wheel_length, QPen(), QBrush(Qt::SolidPattern));
-    wheel->setTransform(base_wheel_transform);
-
-    // front wheels
-    QColor wheel_color = Qt::black;
-    if ( fabs(wheel_angle) >= 44.8 ) {
-        wheel_color = Qt::red;
-    }
-
-    QTransform steering_transform;
-    steering_transform.rotate(wheel_angle);
-
-    QTransform position_transform(1.0, 0.0, 0.0, 1.0, -car_width/2.0, -car_length/2.0);
-    wheel = wheel_scene_.addRect(-wheel_width/2.0, -wheel_length/2.0, wheel_width, wheel_length, QPen(), QBrush(wheel_color, Qt::SolidPattern));
-    wheel->setTransform(steering_transform*position_transform, true);
-
-    position_transform = QTransform(1.0, 0.0, 0.0, 1.0, car_width/2.0, -car_length/2.0);
-    wheel = wheel_scene_.addRect(-wheel_width/2.0, -wheel_length/2.0, wheel_width, wheel_length, QPen(), QBrush(wheel_color, Qt::SolidPattern));
-    wheel->setTransform(steering_transform*position_transform, true);
-
-    // Draw all stop sign in img
-    if ( all_stop_ ) {
-        QGraphicsRectItem *background_item = wheel_scene_.addRect(-car_width/2.0+0.3, 0.0-car_length/12.0, car_width-0.6, car_length/6.0, QPen(Qt::red), QBrush(Qt::red));
-
-        QFont textFont;
-        textFont.setBold(true);
-        textFont.setPixelSize(background_item->boundingRect().height()-0.5);
-        QGraphicsTextItem *allStopTextItem = wheel_scene_.addText("Hold!", textFont);
-        allStopTextItem->setDefaultTextColor(Qt::white);
-        allStopTextItem->moveBy( -allStopTextItem->boundingRect().width()/2.0, -allStopTextItem->boundingRect().height()/2.0);
-    }
-    else if ( connection_loss_ ) {
-        QGraphicsRectItem *background_item = wheel_scene_.addRect(-car_width/2.0+0.3, 0.0-car_length/12.0, car_width-0.6, car_length/6.0, QPen(Qt::yellow), QBrush(Qt::yellow));
-
-        QFont textFont;
-        textFont.setBold(true);
-        textFont.setPixelSize(background_item->boundingRect().height()-0.5);
-        QGraphicsTextItem *allStopTextItem = wheel_scene_.addText("No Signal!", textFont);
-        allStopTextItem->setDefaultTextColor(Qt::black);
-        allStopTextItem->moveBy( -allStopTextItem->boundingRect().width()/2.0, -allStopTextItem->boundingRect().height()/2.0);
-    }
-
-
-
-    ui_->graphicsView_Wheels->centerOn(0.0, 0.0);
-}
-
-void DrivingWidget::setGUIEnabled(bool enable) {
-    ui_->pushButton_AllStop->setEnabled(enable);
-    ui_->pushButton_ConfirmHeadSensitivity->setEnabled(enable);
-    ui_->pushButton_ConfirmSteeringSensitivity->setEnabled(enable);
-    //ui_->pushButton_ShowCameraImage->setEnabled(enable);
-    ui_->pushButton_OverrideLimits->setEnabled(enable);
-    ui_->spinBox_HeadSensitivity->setEnabled(enable);
-    ui_->spinBox_SteeringSensitivity->setEnabled(enable);
-    ui_->lineEdit_SteeringAngle->setEnabled(enable);
-    ui_->lineEdit_WheelAngle->setEnabled(enable);
-}
-
-void DrivingWidget::handleNewCameraImage(sensor_msgs::ImageConstPtr msg) {
-    QImage img(&(msg->data[0]), msg->width, msg->height, QImage::Format_RGB888);
-    img = img.rgbSwapped();
-    QPixmap pixmap = QPixmap::fromImage(img.scaled( ui_->label_CameraImage->width()-8, ui_->label_CameraImage->height()-8, Qt::KeepAspectRatio));
-    ui_->label_CameraImage->setPixmap(pixmap);
-}
-
-void DrivingWidget::handleNewDrivingState(humanoid_driving_controller::DrivingStateConstPtr msg) {
-    current_absolute_steering_angle_ = msg->current_absolute_steering_angle;
-    connection_loss_ = msg->connection_loss;
-    current_head_pan_ = msg->current_head_pan;
-    current_head_tilt_ = msg->current_head_tilt;
-    driving_counter_ = msg->driving_counter;
-
-    if ( all_stop_ ) {
-        absolute_target_steering_angle_ = current_absolute_steering_angle_;
-        head_target_pan_ = current_head_pan_;
-        head_target_tilt_ = current_head_tilt_;
-    }
-
-    current_steering_angle_ = current_absolute_steering_angle_;
-    while ( current_steering_angle_ >= 360.0 )  current_steering_angle_ -= 360.0;
-    while ( current_steering_angle_ < 0 )       current_steering_angle_ += 360.0;
-
-    // Publish wheel angle in rad
-    // Changed to be consistent with hand tuning for driving aid markers by SK,
-    // see https://github.com/thor-mang/thor_mang_driving/commit/17bbb47feb74fa88ad3699d9252783e41b84c871
-    //double wheel_angle_rad = current_absolute_steering_angle_*(2.0*M_PI)*90.0/(540.0*360.0);
-
-    double wheel_angle_deg = current_absolute_steering_angle_*30.0/540.0;
-
-    double wheel_angle_rad = wheel_angle_deg * (M_PI/180.0);
-
-    std_msgs::Float64 wheel_angle_msg;
-    wheel_angle_msg.data = -wheel_angle_rad;
-    wheel_angle_pub_.publish(wheel_angle_msg);
-}
 
 void DrivingWidget::SLO_SteeringSensitivityChanged() {
     ui_->pushButton_ConfirmSteeringSensitivity->setStyleSheet("color:#FF0000");
@@ -309,13 +225,22 @@ void DrivingWidget::SLO_SteeringSensitivityConfirmed() {
     ui_->pushButton_ConfirmSteeringSensitivity->setStyleSheet("color:#000000");
 }
 
-void DrivingWidget::SLO_HeadSensitivityChanged() {
-    ui_->pushButton_ConfirmHeadSensitivity->setStyleSheet("color:#FF0000");
+void DrivingWidget::SLO_HeadTiltSensitivityChanged() {
+    ui_->pushButton_ConfirmHeadTiltSensitivity->setStyleSheet("color:#FF0000");
 }
 
-void DrivingWidget::SLO_HeadSensitivityConfirmed() {
-    head_sensitivity_ = ui_->spinBox_HeadSensitivity->value();
-    ui_->pushButton_ConfirmHeadSensitivity->setStyleSheet("color:#000000");
+void DrivingWidget::SLO_HeadTiltSensitivityConfirmed() {
+    head_tilt_sensitivity_ = ui_->spinBox_HeadTiltSensitivity->value();
+    ui_->pushButton_ConfirmHeadTiltSensitivity->setStyleSheet("color:#000000");
+}
+
+void DrivingWidget::SLO_HeadPanSensitivityChanged() {
+    ui_->pushButton_ConfirmHeadPanSensitivity->setStyleSheet("color:#FF0000");
+}
+
+void DrivingWidget::SLO_HeadPanSensitivityConfirmed() {
+    head_pan_sensitivity_ = ui_->spinBox_HeadPanSensitivity->value();
+    ui_->pushButton_ConfirmHeadPanSensitivity->setStyleSheet("color:#000000");
 }
 
 void DrivingWidget::SLO_ShowCameraImage(bool show) {
@@ -328,12 +253,12 @@ void DrivingWidget::SLO_ShowCameraImage(bool show) {
     }
 }
 
-void DrivingWidget::SLO_AllStopButtonChecked(bool active) {
-    all_stop_ = active;
+void DrivingWidget::SLO_AllHoldButtonChecked(bool active) {
+    target_command_.all_hold = active;
 }
 
 void DrivingWidget::SLO_ToggleDrivingMode() {
-    ui_->label_WaitingForACK->setText("Waiting for ACK...");
+    ui_->label_WaitingForACK->setText(tr("Waiting for ACK..."));
 
     std_msgs::Bool enable_msg;
     enable_msg.data = !controller_enabled_;
@@ -353,87 +278,7 @@ void DrivingWidget::SLO_OverrideLimits(bool override) {
     ignore_steering_limits_ = override;
 }
 
-void DrivingWidget::handleJoyPadEvent(sensor_msgs::JoyConstPtr msg) {
-    if ( controller_enabled_ == false )
-        return;
 
-    handleSteeringCommand(msg->axes[ joypad_ids_[DrivingWidget::AXIS_STEERING] ]);
-    handleHeadCommand(msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_TILT_2] ], msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_PAN_2]]);
-    handleHeadCommand(msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_TILT] ], msg->axes[ joypad_ids_[DrivingWidget::AXIS_HEAD_PAN]]);
-
-    drive_forward_ = msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_FORWARD] ];
-
-    if ( msg->buttons[ joypad_ids_[ DrivingWidget::BUTTON_ALL_STOP] ] )
-        all_stop_ = !all_stop_;
-
-    bool update_steering_sensitivity = false;
-    if ( allow_steering_sensitivity_change_ ) {
-        if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_STEERING_SENSITIVITY_PLUS]] ) {
-            steering_sensitivity_ += 0.1;
-            update_steering_sensitivity = true;
-        }
-
-        if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_STEERING_SENSITIVITY_MINUS]] ) {
-            steering_sensitivity_ -= 0.1;
-            update_steering_sensitivity = true;
-        }
-    }
-
-    bool update_head_sensitivity = false;
-    if ( allow_head_sensitivity_change_ ) {
-        if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_HEAD_SENSITIVITY_PLUS]] ) {
-            head_sensitivity_ += 0.1;
-            update_head_sensitivity = true;
-        }
-
-        if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_HEAD_SENSITIVITY_MINUS]] ) {
-            head_sensitivity_ -= 0.1;
-            update_head_sensitivity = true;
-        }
-    }
-
-    if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_HEAD_TO_DEFAULT]] ) {
-        head_target_pan_ = 0.0;
-        head_target_tilt_ = 0.0;
-    }
-
-    if ( msg->buttons[ joypad_ids_[DrivingWidget::BUTTON_STEERING_TO_DEFAULT]] ) {
-        absolute_target_steering_angle_ = 0.0;
-    }
-
-    // don't allow negative sensitivities
-    steering_sensitivity_ = std::max(0.0, steering_sensitivity_);
-    head_sensitivity_ = std::max(0.0, head_sensitivity_);
-
-    updateUI(update_steering_sensitivity, update_head_sensitivity);
-}
-
-void DrivingWidget::handleAllStopEnabled(humanoid_driving_controller::DrivingCommandConstPtr msg) {
-    all_stop_ = msg->all_stop;
-    drive_forward_ = msg->drive_forward;
-
-    if ( all_stop_ ) {
-        absolute_target_steering_angle_ = current_absolute_steering_angle_;
-        head_target_pan_ = msg->absolute_head_pan;
-        head_target_tilt_ = msg->absolute_head_tilt;
-    }
-}
-
-void DrivingWidget::handleControllerEnableACK(std_msgs::BoolConstPtr msg) {
-    if ( msg->data ) { // controller enabled
-        ui_->pushButton_ToggleDrivingMode->setText("Disable Driving Mode");
-        ui_->label_WaitingForACK->setText("Driving Mode Active!");
-        controller_enabled_ = true;
-    }
-    else { // controller disabled
-        ui_->pushButton_ToggleDrivingMode->setText("Enable Driving Mode");
-        ui_->label_WaitingForACK->setText("Driving Mode Disabled!");
-        ui_->pushButton_ShowCameraImage->setChecked(false);
-        controller_enabled_ = false;
-    }
-
-    setGUIEnabled(controller_enabled_);
-}
 
 void DrivingWidget::sendDrivingCommand() {
     if ( controller_enabled_ == false )
@@ -441,49 +286,198 @@ void DrivingWidget::sendDrivingCommand() {
 
     checkSteeringLimits();
 
-    absolute_target_steering_angle_ += steering_speed_;
-    head_target_pan_ += head_pan_speed_;
-    head_target_tilt_ += head_tilt_speed_;
+    if( target_command_.all_hold ) { // all hold active => target state = current state
+        target_command_.steering_wheel_angle = current_state_.steering_wheel_angle;
+        target_command_.head_pan = current_state_.head_pan;
+        target_command_.head_tilt = current_state_.head_tilt;
+    }
+    else { // update target state from current speeds
+        target_command_.steering_wheel_angle += steering_speed_;
+        target_command_.head_pan += head_pan_speed_;
+        target_command_.head_tilt += head_tilt_speed_;
+    }
 
-    humanoid_driving_controller::DrivingCommand driving_command_msg;
-    driving_command_msg.all_stop = all_stop_;
-    driving_command_msg.absolute_target_steering_angle = absolute_target_steering_angle_;
-    driving_command_msg.drive_forward = drive_forward_;
-    driving_command_msg.absolute_head_pan = head_target_pan_;
-    driving_command_msg.absolute_head_tilt = head_target_tilt_;
-    driving_command_pub_.publish(driving_command_msg);
-}
-
-void DrivingWidget::handleHeadCommand(double tilt, double pan) {
-    head_tilt_speed_ = head_tilt_correction_ * head_sensitivity_ * tilt;
-    head_pan_speed_ = head_pan_correction_ * head_sensitivity_ * pan;
-}
-
-void DrivingWidget::handleSteeringCommand(double step) {
-    steering_speed_ = steering_correction_ * steering_sensitivity_ * step;
+    driving_command_pub_.publish(target_command_);
 }
 
 void DrivingWidget::checkSteeringLimits() {
-    if ( head_target_pan_ + head_pan_speed_ <= -1.57 ||
-         head_target_pan_ + head_pan_speed_ >= 1.57 ) {
+    if ( target_command_.head_pan + head_pan_speed_ <= -1.57 ||
+         target_command_.head_pan + head_pan_speed_ >= 1.57 ) {
         head_pan_speed_ = 0.0;
     }
 
-    if ( head_target_tilt_ + head_tilt_speed_ <= -1.32 ||
-         head_target_tilt_ + head_tilt_speed_ >= 0.79 ) {
+    if ( target_command_.head_tilt + head_tilt_speed_ <= -1.32 ||
+         target_command_.head_tilt + head_tilt_speed_ >= 0.79 ) {
         head_tilt_speed_ = 0.0;
     }
 
     if (ignore_steering_limits_ == false ) {
-        if (current_absolute_steering_angle_ + steering_speed_ < -540.0) {
-            absolute_target_steering_angle_ = -540.0;
+        if (current_state_.steering_wheel_angle + steering_speed_ < -MaxSteeringWheelRotation ) {
+            target_command_.steering_wheel_angle = -MaxSteeringWheelRotation;
             steering_speed_ = 0.0;
         }
-        else if ( current_absolute_steering_angle_ + steering_speed_ >  540.0 ) {
-            absolute_target_steering_angle_ = 540.0;
+        else if ( current_state_.steering_wheel_angle + steering_speed_ > MaxSteeringWheelRotation ) {
+            target_command_.steering_wheel_angle = MaxSteeringWheelRotation;
             steering_speed_ = 0.0;
         }
     }
+}
+
+void DrivingWidget::updateUI(bool update_steering_sensitivity, bool update_head_sensitivity) {
+    double steering_wheel_angle_deg = rad2deg(current_state_.steering_wheel_angle);
+    double wheel_angle_deg = rad2deg(current_state_.steering_wheel_angle*WheelAnglePerSteeringRotation/MaxSteeringWheelRotation);
+
+    // update line edits and spin boxes
+    ui_->lineEdit_WheelAngle->setText( QString("%1 \260").arg(wheel_angle_deg, 3, 'f', 1));
+    ui_->lineEdit_SteeringAngle->setText(QString("%1 \260").arg(steering_wheel_angle_deg, 3, 'f', 1));
+
+    if ( update_steering_sensitivity ) {
+        ui_->spinBox_SteeringSensitivity->blockSignals(true);
+        ui_->spinBox_SteeringSensitivity->setValue(steering_sensitivity_);
+        ui_->spinBox_SteeringSensitivity->blockSignals(false);
+    }
+
+    if ( update_head_sensitivity ) {
+        ui_->spinBox_HeadTiltSensitivity->blockSignals(true);
+        ui_->spinBox_HeadTiltSensitivity->setValue(head_tilt_sensitivity_);
+        ui_->spinBox_HeadTiltSensitivity->blockSignals(false);
+
+        ui_->spinBox_HeadPanSensitivity->blockSignals(true);
+        ui_->spinBox_HeadPanSensitivity->setValue(head_pan_sensitivity_);
+        ui_->spinBox_HeadPanSensitivity->blockSignals(false);
+    }
+
+    ui_->pushButton_AllHold->setChecked(target_command_.all_hold);
+    if ( target_command_.drive_forward )
+        ui_->label_DrivingActive->setStyleSheet("background-color:#00C000;color:#FFFFFF;");
+    else
+        ui_->label_DrivingActive->setStyleSheet("");
+
+    // set current steering angle => map to [-180; +180]
+    double limited_steering_wheel_angle_deg = rad2deg(current_state_.steering_wheel_angle);
+    while ( limited_steering_wheel_angle_deg >= 360.0 )  limited_steering_wheel_angle_deg -= 360.0;
+    while ( limited_steering_wheel_angle_deg <= -360.0 ) limited_steering_wheel_angle_deg += 360.0;
+
+    if ( limited_steering_wheel_angle_deg <= -180.0 ) limited_steering_wheel_angle_deg += 360.0;
+    if ( limited_steering_wheel_angle_deg >= 180.0 )  limited_steering_wheel_angle_deg -= 360.0;
+
+    ui_->dial_CurrentSteeringPosition->setValue( (int)limited_steering_wheel_angle_deg);
+
+    // set target steering angle => map to [-180; +180]
+    double limited_target_steering_wheel_angle_deg = rad2deg(target_command_.steering_wheel_angle);
+    while ( limited_target_steering_wheel_angle_deg >= 360.0 )  limited_target_steering_wheel_angle_deg -= 360.0;
+    while ( limited_target_steering_wheel_angle_deg <= -360.0 ) limited_target_steering_wheel_angle_deg += 360.0;
+
+    if ( limited_target_steering_wheel_angle_deg <= -180.0 ) limited_target_steering_wheel_angle_deg += 360.0;
+    if ( limited_target_steering_wheel_angle_deg >= 180.0 )  limited_target_steering_wheel_angle_deg -= 360.0;
+
+    ui_->dial_TargetSteeringPosition->setValue( (int)limited_target_steering_wheel_angle_deg);
+
+    drawWheelVisualization();
+
+    ui_->slider_HeadPan->setValue(target_command_.head_pan*100.0);
+    ui_->slider_HeadTilt->setValue(target_command_.head_tilt*100.0);
+    ui_->slider_CurrentHeadPan->setValue(current_state_.head_pan*100.0);
+    ui_->slider_CurrentHeadTilt->setValue(current_state_.head_tilt*100.0);
+
+    ui_->lineEdit_DrivingCounter->setText(QString("%1").arg(current_state_.driving_counter));
+}
+
+void DrivingWidget::drawWheelVisualization() {
+    if ( ui_->graphicsView_Wheels->isVisible() == false )
+        return;
+
+    double wheel_angle = current_state_.steering_wheel_angle*WheelAnglePerSteeringRotation/MaxSteeringWheelRotation;    
+    double total_width = ui_->graphicsView_Wheels->width()-12;
+    double total_height = ui_->graphicsView_Wheels->height()-12;
+    double car_dist_from_border = std::min(total_width, total_height) * 0.05;
+    double car_length = std::min(total_width, total_height)-car_dist_from_border;
+    double car_width = car_length / 2.0;
+    double wheel_width = car_width / 4.0;
+    double wheel_length = wheel_width*3.0;
+
+    QTransform base_wheel_transform(1.0, 0.0, 0.0, 1.0, -wheel_width/2.0, -wheel_length/2.0);
+
+    wheel_scene_.clear();
+    wheel_scene_.setSceneRect(-total_width/2.0, -total_height/2.0, total_width, total_height);
+    wheel_scene_.addRect(-car_width/2.0, -car_length/2.0, car_width, car_length );
+
+    // back wheels
+    QGraphicsRectItem *wheel = wheel_scene_.addRect(-car_width/2.0, car_length/2.0, wheel_width, wheel_length, QPen(), QBrush(Qt::SolidPattern));
+    wheel->setTransform(base_wheel_transform);
+
+    wheel = wheel_scene_.addRect(car_width/2.0, car_length/2.0, wheel_width, wheel_length, QPen(), QBrush(Qt::SolidPattern));
+    wheel->setTransform(base_wheel_transform);
+
+    // front wheels
+    QColor wheel_color = Qt::black;
+    if ( fabs(wheel_angle) >= MaxWheelAngle-MaxWheelAngleWarningOffset ) {
+        wheel_color = Qt::red;
+    }
+
+    QTransform steering_transform;
+    steering_transform.rotateRadians(wheel_angle);
+
+    QTransform position_transform(1.0, 0.0, 0.0, 1.0, -car_width/2.0, -car_length/2.0);
+    wheel = wheel_scene_.addRect(-wheel_width/2.0, -wheel_length/2.0, wheel_width, wheel_length, QPen(), QBrush(wheel_color, Qt::SolidPattern));
+    wheel->setTransform(steering_transform*position_transform, true);
+
+    position_transform = QTransform(1.0, 0.0, 0.0, 1.0, car_width/2.0, -car_length/2.0);
+    wheel = wheel_scene_.addRect(-wheel_width/2.0, -wheel_length/2.0, wheel_width, wheel_length, QPen(), QBrush(wheel_color, Qt::SolidPattern));
+    wheel->setTransform(steering_transform*position_transform, true);
+
+    // Draw all hold sign in img
+    if ( target_command_.all_hold ) {
+        QGraphicsRectItem *background_item = wheel_scene_.addRect(-car_width/2.0+0.3, 0.0-car_length/12.0, car_width-0.6, car_length/6.0, QPen(Qt::red), QBrush(Qt::red));
+
+        QFont textFont;
+        textFont.setBold(true);
+        textFont.setPixelSize(background_item->boundingRect().height()-0.5);
+        QGraphicsTextItem *allHoldTextItem = wheel_scene_.addText("Hold!", textFont);
+        allHoldTextItem->setDefaultTextColor(Qt::white);
+        allHoldTextItem->moveBy( -allHoldTextItem->boundingRect().width()/2.0, -allHoldTextItem->boundingRect().height()/2.0);
+    }
+    else if ( current_state_.connection_loss ) {
+        QGraphicsRectItem *background_item = wheel_scene_.addRect(-car_width/2.0+0.3, 0.0-car_length/12.0, car_width-0.6, car_length/6.0, QPen(Qt::yellow), QBrush(Qt::yellow));
+
+        QFont textFont;
+        textFont.setBold(true);
+        textFont.setPixelSize(background_item->boundingRect().height()-0.5);
+        QGraphicsTextItem *connectionLossItem = wheel_scene_.addText("No Signal!", textFont);
+        connectionLossItem->setDefaultTextColor(Qt::black);
+        connectionLossItem->moveBy( -connectionLossItem->boundingRect().width()/2.0, -connectionLossItem->boundingRect().height()/2.0);
+    }
+
+
+
+    ui_->graphicsView_Wheels->centerOn(0.0, 0.0);
+}
+
+void DrivingWidget::setGUIEnabled(bool enable) {
+    ui_->pushButton_AllHold->setEnabled(enable);
+    ui_->pushButton_ConfirmHeadTiltSensitivity->setEnabled(enable);
+    ui_->pushButton_ConfirmHeadPanSensitivity->setEnabled(enable);
+    ui_->pushButton_ConfirmSteeringSensitivity->setEnabled(enable);
+    ui_->pushButton_OverrideLimits->setEnabled(enable);
+    ui_->spinBox_HeadTiltSensitivity->setEnabled(enable);
+    ui_->spinBox_HeadPanSensitivity->setEnabled(enable);
+    ui_->spinBox_SteeringSensitivity->setEnabled(enable);
+    ui_->lineEdit_SteeringAngle->setEnabled(enable);
+    ui_->lineEdit_WheelAngle->setEnabled(enable);
+}
+
+void DrivingWidget::handleHeadCommand(double tilt, double pan) {
+    head_tilt_speed_ = head_tilt_sensitivity_ * tilt;
+    head_pan_speed_ = head_pan_sensitivity_ * pan;
+}
+
+void DrivingWidget::handleSteeringCommand(double step) {
+    steering_speed_ = steering_sensitivity_ * step;
+}
+
+
+double DrivingWidget::rad2deg(double rad) {
+    return rad*180.0/M_PI;
 }
 
 }

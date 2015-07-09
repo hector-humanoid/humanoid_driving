@@ -1,12 +1,12 @@
 # Cease all operation, go to safe pose
-bool all_stop
+bool all_hold
 
 # Press throttle pedal?
 bool drive_forward
 
-# Change steering angle by x
-float32 absolute_target_steering_angle
+# Change steering angle to x
+float32 steering_wheel_angle
 
-# Head tilt and pan speeds
-float32 absolute_head_pan
-float32 absolute_head_tilt
+# Head tilt and pan
+float32 head_pan
+float32 head_tilt
