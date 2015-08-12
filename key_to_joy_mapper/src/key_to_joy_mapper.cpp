@@ -76,14 +76,16 @@ public:
     
 private:
     void loadKeyMappings() {
-      std::vector<int> button_keys = private_node_handle_.param<std::vector<int> >("buttons", std::vector<int>());
+      std::vector<int> button_keys;
+			private_node_handle_.getParam("buttons", button_keys);
       for ( int i = 0; i < button_keys.size(); i++ ) {
           if ( button_keys[i] != -1 ) {
             buttons_[button_keys[i]] = i;
           }
       }
 
-      std::vector<int> axis_plus_keys = private_node_handle_.param<std::vector<int> >("axis_plus", std::vector<int>());
+      std::vector<int> axis_plus_keys;
+			private_node_handle_.getParam("axis_plus", axis_plus_keys);
       for ( int i = 0; i < axis_plus_keys.size(); i++ ) {
           if ( axis_plus_keys[i] != -1 ) {
             axis_plus_[axis_plus_keys[i]] = i;
@@ -91,7 +93,8 @@ private:
 
       }
       
-      std::vector<int> axis_minus_keys = private_node_handle_.param<std::vector<int> >("axis_minus", std::vector<int>());
+      std::vector<int> axis_minus_keys;
+			private_node_handle_.getParam("axis_minus", axis_minus_keys);
       for ( int i = 0; i < axis_minus_keys.size(); i++ ) {
           if ( axis_minus_keys[i] != -1 ) {
             axis_minus_[axis_minus_keys[i]] = i;
