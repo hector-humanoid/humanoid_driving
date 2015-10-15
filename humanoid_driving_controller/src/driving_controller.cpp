@@ -119,7 +119,7 @@ void DrivingController::updateSteering() {
     while ( target_angle_deg < 0 )       target_angle_deg += 360.0;
 
     // interpolate between neighboring key frames
-    std::vector<double> interpolated_frame = getInterpolatedKeyFrame(target_angle, 360.0);
+    std::vector<double> interpolated_frame = getInterpolatedKeyFrame(target_angle_deg, 360.0);
     trajectory_msgs::JointTrajectory trajectory_msg = generateTrajectoryMsg(interpolated_frame, steering_joint_names_);
     steering_control_cmd_pub_.publish(trajectory_msg);
 
