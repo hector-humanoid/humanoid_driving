@@ -2,8 +2,8 @@
 
 <launch>
   <node name="driving_controller" pkg="humanoid_driving_controller" type="driving_controller" output="screen" respawn="true">
-    <rosparam file="$(find humanoid_driving_controller)/config/steering/key_pos.yaml"/> <!-- steering config -->
-    <rosparam file="$(find humanoid_driving_controller)/config/throttle/speed_configuration.yaml"/> <!-- throttle config -->
+    <rosparam file="$(find humanoid_driving_controller)/config/steering/thor_virtual_driving.yaml"/> <!-- steering config -->
+    <rosparam file="$(find humanoid_driving_controller)/config/throttle/thor_virtual_driving.yaml"/> <!-- throttle config -->
     <rosparam file="$(find humanoid_driving_controller)/config/head/head_config.yaml"/> <!-- head config -->
 
     <!-- controller topics -->
