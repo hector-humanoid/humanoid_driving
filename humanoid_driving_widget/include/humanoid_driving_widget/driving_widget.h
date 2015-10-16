@@ -204,7 +204,8 @@ private:
 
     // constants
     const double WheelAnglePerSteeringRotation = M_PI/6.0; // 30° wheel rotation for 360° steering wheel rotation
-    const double MaxSteeringWheelRotation = 3*M_PI;        // 540° max steering wheel rotation
+    //const double MaxSteeringWheelRotation = 3*M_PI;        // 540° max steering wheel rotation
+    const double MaxSteeringWheelRotation = M_PI/2;        // 90° max steering wheel rotation
     const double MaxWheelAngleWarningOffset = 3.5e-3;      // Warn about reaching maximum steering angle about 0.2° before
     const double SteeringSensitivityStep = 0.1;            // sensitivity change on joypad button press
     const double HeadSensitivityStep = 0.1;                // sensitivity change on joypad button press

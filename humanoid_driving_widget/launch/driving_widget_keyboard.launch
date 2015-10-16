@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node name="driving_widget" pkg="humanoid_driving_widget" type="driving_widget" output="screen">
+    <rosparam param="camera_topic">/camera/image_raw</rosparam>
+    <rosparam file="$(find humanoid_driving_widget)/config/logitech_joypad.yaml"/>
+  </node>
+  
+  <include file = "$(find driving_aid_visualization)/launch/polaris_drive_aid.launch" />
+  <include file = "$(find key_to_joy_mapper)/launch/key_to_joy_mapper.launch" />
+</launch>
