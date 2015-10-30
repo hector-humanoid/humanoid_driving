@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<launch>
+  <node name="driving_controller" pkg="humanoid_driving_controller" type="driving_controller" output="screen" respawn="true">
+    <rosparam file="$(find humanoid_driving_controller)/config/steering/thor_sim.yaml"/> <!-- steering config -->
+    <rosparam file="$(find humanoid_driving_controller)/config/throttle/thor_sim.yaml"/> <!-- throttle config -->
+    <rosparam file="$(find humanoid_driving_controller)/config/head/head_config.yaml"/> <!-- head config -->
+
+    <!-- controller topics -->
+    <rosparam param="steering_controller_topic">/thor_mang/left_arm_traj_controller/command</rosparam>
+    <rosparam param="speed_controller_topic">/thor_mang/right_leg_traj_controller/command</rosparam>
+    <rosparam param="head_controller_topic">/thor_mang/head_traj_controller/command</rosparam>
+    <rosparam param="joint_state_topic">/thor_mang/joint_states</rosparam>
+  </node>
+</launch>

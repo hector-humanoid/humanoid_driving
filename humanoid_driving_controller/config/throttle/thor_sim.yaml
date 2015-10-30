@@ -1,0 +1,23 @@
+forward_position:
+- 1.4062
+- -0.82
+- 0.6795
+leg_joints:
+- r_hip_yaw
+- r_hip_roll
+- r_hip_pitch
+- r_knee
+- r_ankle_pitch
+- r_ankle_roll
+safety_position:
+- 1.4017
+- -1.107
+- 0.5098
+speed_control_joints:
+- r_hip_pitch
+- r_knee
+- r_ankle_pitch
+stop_position:
+- 1.4017
+- -1.107
+- 0.5098
